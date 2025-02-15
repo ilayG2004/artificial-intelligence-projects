@@ -48,13 +48,13 @@ public class StealthAgent
     private boolean townhall = false;
     private boolean gold = false;
 
-    public boolean isValid(Vertex vert, StateView state) {
+    public boolean isValid(Vertex vert, StateView state, Vertex goal) {
         int x = vert.getXCoordinate();
         int y = vert.getYCoordinate();
-        return (x >= 0 && y >= 0 && x < state.getXExtent() && y < state.getYExtent() && (!state.isResourceAt(x, y)));
+        return (x >= 0 && y >= 0 && x < state.getXExtent() && y < state.getYExtent() && (!state.isResourceAt(x, y))) || vert == goal;
     }
 
-    public Collection<Vertex> getValidNeighbors(Vertex vert, StateView state) {
+    public Collection<Vertex> getValidNeighbors(Vertex vert, StateView state, Vertex goal) {
         Collection<Vertex> verts = new ArrayList<>();
         int[] rows = {-1, -1, 1, 1, -1, 1, 0, 0};
         int[] cols = {-1, 1, -1, 1, 0, 0, -1, 1};
@@ -62,7 +62,7 @@ public class StealthAgent
             int x = vert.getXCoordinate() + rows[i];
             int y = vert.getYCoordinate() + cols[i];
             Vertex newVert = new Vertex(x, y);
-            if (isValid(newVert, state)) {
+            if (isValid(newVert, state, goal)) {
                 verts.add(newVert);
             }
         }
@@ -133,6 +133,8 @@ public class StealthAgent
         // as the enemy sight limit
         this.setEnemyChebyshevSightLimit(otherEnemyUnitView.getTemplateView().getRange());
 
+        getNeighbors(getStartingVertex(), state, null);
+
         return null;
     }
 
@@ -176,7 +178,12 @@ public class StealthAgent
                                            ExtraParams extraParams)
     {
         // getting our townhall ID then constructing a unit for it
-        Collection<Vertex> neighbors = getValidNeighbors(v, state);
+        UnitView townHall = state.getUnit(getEnemyBaseUnitID());
+        int x = townHall.getXPosition();
+        int y = townHall.getYPosition();
+        Vertex goal = new Vertex(x, y);
+
+        Collection<Vertex> neighbors = getValidNeighbors(v, state, goal);
         
         return neighbors;
     }
@@ -200,6 +207,7 @@ public class StealthAgent
     public boolean shouldReplacePlan(StateView state,
                                      ExtraParams extraParams)
     {
+        // if we are within 3 blocks of an enemy, change plan immediately 
         return false;
     }
 
