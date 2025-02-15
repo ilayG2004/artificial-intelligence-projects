@@ -4,6 +4,8 @@ package src.pas.stealth.agents;
 // SYSTEM IMPORTS
 import edu.cwru.sepia.action.Action;
 import edu.cwru.sepia.environment.model.history.History.HistoryView;
+import edu.cwru.sepia.environment.model.state.Unit;
+import edu.cwru.sepia.environment.model.state.UnitTemplate;
 import edu.cwru.sepia.environment.model.state.State.StateView;
 import edu.cwru.sepia.environment.model.state.Unit.UnitView;
 import edu.cwru.sepia.util.Direction;
@@ -11,10 +13,13 @@ import edu.cwru.sepia.util.Direction;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 // JAVA PROJECT IMPORTS
@@ -23,6 +28,8 @@ import edu.bu.pas.stealth.agents.AStarAgent.AgentPhase;     // INFILTRATE/EXFILT
 import edu.bu.pas.stealth.agents.AStarAgent.ExtraParams;    // base class for creating your own params objects
 import edu.bu.pas.stealth.graph.Vertex;                     // Vertex = coordinate
 import edu.bu.pas.stealth.graph.Path;                       // see the documentation...a Path is a linked list
+
+
 
 
 
@@ -40,6 +47,27 @@ public class StealthAgent
     private int start_y;
     private boolean townhall = false;
     private boolean gold = false;
+
+    public boolean isValid(Vertex vert, StateView state) {
+        int x = vert.getXCoordinate();
+        int y = vert.getYCoordinate();
+        return (x >= 0 && y >= 0 && x < state.getXExtent() && y < state.getYExtent() && (!state.isResourceAt(x, y)));
+    }
+
+    public Collection<Vertex> getValidNeighbors(Vertex vert, StateView state) {
+        Collection<Vertex> verts = new ArrayList<>();
+        int[] rows = {-1, -1, 1, 1, -1, 1, 0, 0};
+        int[] cols = {-1, 1, -1, 1, 0, 0, -1, 1};
+        for (int i = 0; i < rows.length; i++) {
+            int x = vert.getXCoordinate() + rows[i];
+            int y = vert.getYCoordinate() + cols[i];
+            Vertex newVert = new Vertex(x, y);
+            if (isValid(newVert, state)) {
+                verts.add(newVert);
+            }
+        }
+        return verts;
+    }
     
 
     public StealthAgent(int playerNum)
@@ -147,6 +175,19 @@ public class StealthAgent
                                            StateView state,
                                            ExtraParams extraParams)
     {
+        // getting our townhall ID then constructing a unit for it
+        Collection<Vertex> neighbors = getValidNeighbors(v, state);
+        Iterator<Vertex> neighborIterator = neighbors.iterator();
+
+        while (neighborIterator.hasNext()) {
+            Vertex neighbor = neighborIterator.next();
+            int x = neighbor.getXCoordinate();
+            int y = neighbor.getYCoordinate();
+            System.out.print(x);
+            System.out.print(y);
+            System.out.println();
+        }
+        
         return null;
     }
 
