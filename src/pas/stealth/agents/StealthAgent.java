@@ -177,18 +177,8 @@ public class StealthAgent
     {
         // getting our townhall ID then constructing a unit for it
         Collection<Vertex> neighbors = getValidNeighbors(v, state);
-        Iterator<Vertex> neighborIterator = neighbors.iterator();
-
-        while (neighborIterator.hasNext()) {
-            Vertex neighbor = neighborIterator.next();
-            int x = neighbor.getXCoordinate();
-            int y = neighbor.getYCoordinate();
-            System.out.print(x);
-            System.out.print(y);
-            System.out.println();
-        }
         
-        return null;
+        return neighbors;
     }
 
     public Path aStarSearch(Vertex src,
