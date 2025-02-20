@@ -144,9 +144,7 @@ public class StealthAgent
               (which should only be a single footman in this game)
      */
     @Override
-    public Map<Integer, Action> middleStep(StateView state,
-                                           HistoryView history)
-    {
+    public Map<Integer, Action> middleStep(StateView state, HistoryView history) {
         Map<Integer, Action> actions = new HashMap<Integer, Action>();
 
         /**
@@ -173,10 +171,7 @@ public class StealthAgent
 
     /////////////////////////////////// AStarAgent methods to override ///////////////////////////////////
 
-    public Collection<Vertex> getNeighbors(Vertex v,
-                                           StateView state,
-                                           ExtraParams extraParams)
-    {
+    public Collection<Vertex> getNeighbors(Vertex v, StateView state, ExtraParams extraParams) {
         // getting our townhall ID then constructing a unit for it
         UnitView townHall = state.getUnit(getEnemyBaseUnitID());
         int x = townHall.getXPosition();
@@ -188,20 +183,68 @@ public class StealthAgent
         return neighbors;
     }
 
-    public Path aStarSearch(Vertex src,
-                            Vertex dst,
-                            StateView state,
-                            ExtraParams extraParams)
-    {
+    public Path aStarSearch(Vertex src, Vertex dst, StateView state, ExtraParams extraParams) {
         return null;
     }
 
-    public float getEdgeWeight(Vertex src,
-                               Vertex dst,
-                               StateView state,
-                               ExtraParams extraParams)
-    {
-        return 1f;
+    public float euclidian_distance(Vertex d1, Vertex d2) {
+        int d1_x = d1.getXCoordinate();
+        int d1_y = d1.getYCoordinate();
+        int d2_x = d2.getXCoordinate();
+        int d2_y = d2.getYCoordinate();
+
+        return (float) Math.sqrt(Math.pow((d2_x - d1_x),2) + Math.pow((d2_y - d1_y),2));
+    }
+
+
+    public boolean towardTownhall(Vertex current, Vertex dest, StateView state) {
+        UnitView townHall = state.getUnit(getEnemyBaseUnitID());
+        int th_x = townHall.getXPosition();
+        int th_y = townHall.getYPosition();
+        Vertex thVertex = new Vertex(th_x, th_y);
+
+        if (euclidian_distance(current, thVertex) > euclidian_distance(dest, thVertex)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public int towardEnemies(Vertex current, Vertex dest, StateView state) {
+        int towardEnemy = 0;
+        List<UnitView> enemyUnits = state.getAllUnits();
+        for (int i = 0; i < enemyUnits.size(); i++) {
+            UnitView enemy = enemyUnits.get(i);
+            int enemy_x = enemy.getXPosition();
+            int enemy_y = enemy.getYPosition();
+            Vertex enemyCoord = new Vertex(enemy_x, enemy_y);
+
+            // If the destination we are considering is closer to an enemy than the current position, mark the cost as follows
+            if (euclidian_distance(current, enemyCoord) < euclidian_distance(dest, enemyCoord)) {
+                towardEnemy = towardEnemy + 1;
+            }
+        }
+        return towardEnemy;
+    }
+
+    public float getEdgeWeight(Vertex src, Vertex dst, StateView state, ExtraParams extraParams) {
+        float cost = 1f;
+
+        // If the neighbor we are looking at it closer to the townhall make it cost half as much & make sure its still > 1
+        if (towardTownhall(src, dst, state)) {
+            cost = (float) 0.5 * euclidian_distance(src, dst);
+            if (cost < 1) {
+                cost = 1;
+            }
+        } else {
+            cost = euclidian_distance(src, dst);
+        }
+
+        int numEnemies = towardEnemies(src, dst, state);
+        if (numEnemies > 0) {
+            cost = cost * ((float) (2*numEnemies));
+        }
+        return cost;
     }
 
     public boolean shouldReplacePlan(StateView state,
