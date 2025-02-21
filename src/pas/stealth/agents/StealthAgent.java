@@ -62,6 +62,7 @@ public class StealthAgent
     private boolean gold = false;
     private ArrayList<UnitView> archers = new ArrayList<>();
     private Vertex townhall_coords = new Vertex(0,0);
+    private Path parent_path;
 
 
     public boolean isValid(Vertex vert, StateView state, Vertex goal) {
@@ -145,6 +146,14 @@ public class StealthAgent
         return this.townhall_coords;
     }
 
+    public final Path getParentPath() {
+        return this.parent_path;
+    }
+
+    public void setParentPath(Path prevPath) {
+        this.parent_path = prevPath;
+    }
+
     ///////////////////////////////////////// Sepia methods to override ///////////////////////////////////
 
     /**
@@ -184,20 +193,16 @@ public class StealthAgent
         // as the enemy sight limit
         this.setEnemyChebyshevSightLimit(otherEnemyUnitView.getTemplateView().getRange());
 
-        // Get the agent's UnitView using its ID
-        UnitView unit = state.getUnit(agentID);
+        // Set starting coords so we know where to return to
+        UnitView unit = state.getUnit(getMyUnitID());
         int agentX = unit.getXPosition();
         int agentY = unit.getYPosition();
-
         this.setStart_X(agentX);
         this.setStart_Y(agentY);
         System.out.println(this.getStart_X() + " " + this.getStart_Y());
 
-        Vertex src = new Vertex(this.getStart_X(), this.getStart_Y());
-        Vertex goal = this.getTownhallCoords();
-        Path path = new Path(src);
-        Path newPath = aStarSearch(src, goal, state, new ExtraExtraParams(path));
-        System.out.println(newPath);
+        // Set parent path
+        this.parent_path = (new Path(new Vertex(agentX, agentY)));
         
         return null;
     }
@@ -212,6 +217,14 @@ public class StealthAgent
     public Map<Integer, Action> middleStep(StateView state, HistoryView history) {
         Map<Integer, Action> actions = new HashMap<Integer, Action>();
 
+        //Use aStarSearch to grab shortest path --> grab destination vertex
+        UnitView unit = state.getUnit(getMyUnitID()); 
+        Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
+        Path newPath = aStarSearch(current, this.townhall_coords, state, new ExtraExtraParams(this.getParentPath()));
+        this.setParentPath(newPath);
+        Vertex newVertex = newPath.getDestination();
+
+        actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, newVertex)));
         /**
             I would suggest implementing a state machine here to calculate a path when neccessary.
             For instance beginning with something like:
@@ -248,14 +261,16 @@ public class StealthAgent
         float min_cost = Float.POSITIVE_INFINITY;
 
         for (Vertex neighbor : neighbors) {
-            float cost = getEdgeWeight(src, dst, state, extraParams);
+            float cost = getEdgeWeight(src, neighbor, state, extraParams);
+            System.out.println(neighbor.toString() + " " + cost);
             neighbor_costs.put(cost, neighbor);
             if (cost < min_cost) {
                 min_cost = cost;
             }
         }
-        
+
         Vertex next_vertex = neighbor_costs.get(min_cost);
+        System.out.println(next_vertex.toString() + " agent's shortest path is " +  min_cost);
         Path next_move = new Path(next_vertex, min_cost, (Path) ((ExtraExtraParams) extraParams).getParam());;
         // Grab vertex with smallest key (cost)
         return next_move;
@@ -298,10 +313,15 @@ public class StealthAgent
                     towardEnemy = towardEnemy + 1;
                 }
         }
+
+        if (towardEnemy > 0) {
+            System.out.println(dest.toString() + " is going toward enemies --> " + towardEnemy);
+        }
         return towardEnemy;
     }
 
     public float getEdgeWeight(Vertex src, Vertex dst, StateView state, ExtraParams extraParams) {
+        //src = current node, dst = neighbor node we are evaluating
         float cost = 1f;
 
         // If the neighbor we are looking at it closer to the townhall make it cost half as much & make sure its still > 1
@@ -311,12 +331,12 @@ public class StealthAgent
                 cost = 1;
             }
         } else {
-            cost = euclidian_distance(src, dst);
+            cost = euclidian_distance(src, dst) * 1.5f;
         }
 
         int numEnemies = towardEnemies(src, dst, state);
         if (numEnemies > 0) {
-            cost = cost * ((float) (2*numEnemies));
+            cost = (cost + 1f) * ((float) (4*numEnemies));
         }
         return cost;
     }
