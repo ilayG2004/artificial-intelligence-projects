@@ -31,11 +31,24 @@ import edu.bu.pas.stealth.graph.Path;                       // see the documenta
 
 
 
-
-
 public class StealthAgent
     extends AStarAgent
 {
+    public class ExtraExtraParams extends ExtraParams{
+        public ExtraExtraParams(Object param) {
+            this.setParam(param);
+        }
+        private Object param = new Object();
+    
+        public void setParam(Object param) {
+            this.param = param;
+        }
+    
+        public Object getParam() {
+            return this.param;
+        }
+    
+    }
 
     // Fields of this class
     // TODO: add your fields here! For instance, it might be a good idea to
@@ -47,7 +60,9 @@ public class StealthAgent
     private int start_y;
     private boolean townhall = false;
     private boolean gold = false;
-    private float[] distanceToEnemies = new float[10];
+    private ArrayList<UnitView> archers = new ArrayList<>();
+    private Vertex townhall_coords = new Vertex(0,0);
+
 
     public boolean isValid(Vertex vert, StateView state, Vertex goal) {
         int x = vert.getXCoordinate();
@@ -55,7 +70,8 @@ public class StealthAgent
         return (x >= 0 && y >= 0 && x < state.getXExtent() && y < state.getYExtent() && (!state.isResourceAt(x, y))) || vert == goal;
     }
 
-    public Collection<Vertex> getValidNeighbors(Vertex vert, StateView state, Vertex goal) {
+    public Collection<Vertex> getValidNeighbors(Vertex vert, StateView state) {
+        Vertex goal = this.getTownhallCoords();
         Collection<Vertex> verts = new ArrayList<>();
         int[] rows = {-1, -1, 1, 1, -1, 1, 0, 0};
         int[] cols = {-1, 1, -1, 1, 0, 0, -1, 1};
@@ -100,27 +116,33 @@ public class StealthAgent
 
     public void gotGold() { this.gold = true; }
 
-    /*public void setDistanceToEnemies(float dist, int i) {
-        this.distanceToEnemies[i] = dist;
-    }*/
-
-    public void getDistanceToEnemies(Vertex current, StateView state) {
+    public void setArchers(StateView state) {
+        ArrayList<UnitView> temp = new ArrayList<>();
         List<UnitView> enemyUnits = state.getAllUnits();
         for (int i = 0; i < enemyUnits.size(); i++) {
-            
             UnitView enemy = enemyUnits.get(i);
             String unitTypeName = enemy.getTemplateView().getName();
             if(unitTypeName.equals("Archer")) {
-                int enemy_x = enemy.getXPosition();
-                int enemy_y = enemy.getYPosition();
-                Vertex enemyCoord = new Vertex(enemy_x, enemy_y);
-                System.out.println(enemy_x + " "+ enemy_y);
-                // If the destination we are considering is closer to an enemy than the current position, mark the cost as follows
-                this.distanceToEnemies[i] = euclidian_distance(current, enemyCoord);
-            } else {
-                continue;
+                temp.add(enemy);
             }
         }
+        this.archers = temp;
+    }
+
+    public final ArrayList<UnitView> getArchers() {
+        return this.archers;
+    }
+
+    public void setTownhallCoords(StateView state) {
+        UnitView townHall = state.getUnit(getEnemyBaseUnitID());
+        int x = townHall.getXPosition();
+        int y = townHall.getYPosition();
+        Vertex goal = new Vertex(x, y);
+        this.townhall_coords = goal;
+    }
+
+    public final Vertex getTownhallCoords() {
+        return this.townhall_coords;
     }
 
     ///////////////////////////////////////// Sepia methods to override ///////////////////////////////////
@@ -154,14 +176,29 @@ public class StealthAgent
             System.exit(-1);
         }
 
+        this.setTownhallCoords(state);
+        this.setArchers(state);
+
         // lookup an attribute from the unit's "template" (which you can find in the map .xml files)
         // When I specify the unit's (i.e. "footman"'s) xml template, I will use the "range" attribute
         // as the enemy sight limit
         this.setEnemyChebyshevSightLimit(otherEnemyUnitView.getTemplateView().getRange());
 
-        getNeighbors(getStartingVertex(), state, null);
+        // Get the agent's UnitView using its ID
+        UnitView unit = state.getUnit(agentID);
+        int agentX = unit.getXPosition();
+        int agentY = unit.getYPosition();
 
-        Vertex startingVertex = (this.getStartingVertex());
+        this.setStart_X(agentX);
+        this.setStart_Y(agentY);
+        System.out.println(this.getStart_X() + " " + this.getStart_Y());
+
+        Vertex src = new Vertex(this.getStart_X(), this.getStart_Y());
+        Vertex goal = this.getTownhallCoords();
+        Path path = new Path(src);
+        Path newPath = aStarSearch(src, goal, state, new ExtraExtraParams(path));
+        System.out.println(newPath);
+        
         return null;
     }
     
@@ -200,14 +237,29 @@ public class StealthAgent
     /////////////////////////////////// AStarAgent methods to override ///////////////////////////////////
 
     public Collection<Vertex> getNeighbors(Vertex v, StateView state, ExtraParams extraParams) {
-        // getting our townhall ID then constructing a unit for it
         Collection<Vertex> neighbors = getValidNeighbors(v, state);
         
         return neighbors;
     }
 
     public Path aStarSearch(Vertex src, Vertex dst, StateView state, ExtraParams extraParams) {
-        return null;
+        Collection<Vertex> neighbors = getNeighbors(src, state, extraParams);
+        HashMap<Float, Vertex> neighbor_costs = new HashMap <>();
+        float min_cost = Float.POSITIVE_INFINITY;
+
+        for (Vertex neighbor : neighbors) {
+            float cost = getEdgeWeight(src, dst, state, extraParams);
+            neighbor_costs.put(cost, neighbor);
+            if (cost < min_cost) {
+                min_cost = cost;
+            }
+        }
+        
+        Vertex next_vertex = neighbor_costs.get(min_cost);
+        Path next_move = new Path(next_vertex, min_cost, (Path) ((ExtraExtraParams) extraParams).getParam());;
+        // Grab vertex with smallest key (cost)
+        return next_move;
+        
     }
 
     public float euclidian_distance(Vertex d1, Vertex d2) {
@@ -235,22 +287,16 @@ public class StealthAgent
 
     public int towardEnemies(Vertex current, Vertex dest, StateView state) {
         int towardEnemy = 0;
-        List<UnitView> enemyUnits = state.getAllUnits();
+        List<UnitView> enemyUnits = this.getArchers();
         for (int i = 0; i < enemyUnits.size(); i++) {
-            UnitView enemy = enemyUnits.get(i);
-            String unitTypeName = enemy.getTemplateView().getName();
-            if(unitTypeName.equals("Archer")) {
+                UnitView enemy = enemyUnits.get(i);
                 int enemy_x = enemy.getXPosition();
                 int enemy_y = enemy.getYPosition();
                 Vertex enemyCoord = new Vertex(enemy_x, enemy_y);
-
                 // If the destination we are considering is closer to an enemy than the current position, mark the cost as follows
                 if (euclidian_distance(current, enemyCoord) < euclidian_distance(dest, enemyCoord)) {
                     towardEnemy = towardEnemy + 1;
                 }
-            } else {
-                continue;
-            }
         }
         return towardEnemy;
     }
@@ -275,9 +321,9 @@ public class StealthAgent
         return cost;
     }
 
-    public boolean shouldReplacePlan(StateView state,
-                                     ExtraParams extraParams)
+    public boolean shouldReplacePlan(StateView state, ExtraParams extraParams)
     {
+        List<UnitView> enemyUnits = state.getAllUnits();
         return false;
     }
 
