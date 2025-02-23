@@ -224,6 +224,13 @@ public class StealthAgent
         this.setParentPath(newPath);
         Vertex newVertex = newPath.getDestination();
 
+
+        if (shouldReplacePlan(state, new ExtraParams())) {
+            newPath = aStarSearch(current, this.townhall_coords, state, new ExtraExtraParams(this.getParentPath()));
+            this.setParentPath(newPath);
+            newVertex = newPath.getDestination();
+        }
+       
         actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, newVertex)));
         /**
             I would suggest implementing a state machine here to calculate a path when neccessary.
@@ -300,28 +307,9 @@ public class StealthAgent
         }
     }
 
-    public int towardEnemies(Vertex current, Vertex dest, StateView state) {
-        int towardEnemy = 0;
-        List<UnitView> enemyUnits = this.getArchers();
-        for (int i = 0; i < enemyUnits.size(); i++) {
-                UnitView enemy = enemyUnits.get(i);
-                int enemy_x = enemy.getXPosition();
-                int enemy_y = enemy.getYPosition();
-                Vertex enemyCoord = new Vertex(enemy_x, enemy_y);
-                // If the destination we are considering is closer to an enemy than the current position, mark the cost as follows
-                if (euclidian_distance(current, enemyCoord) < euclidian_distance(dest, enemyCoord)) {
-                    towardEnemy = towardEnemy + 1;
-                }
-        }
-
-        if (towardEnemy > 0) {
-            System.out.println(dest.toString() + " is going toward enemies --> " + towardEnemy);
-        }
-        return towardEnemy;
-    }
 
     public float getEdgeWeight(Vertex src, Vertex dst, StateView state, ExtraParams extraParams) {
-        //src = current node, dst = neighbor node we are evaluating
+        // src = current node, dst = neighbor node we are evaluating
         float cost = 1f;
 
         // If the neighbor we are looking at it closer to the townhall make it cost half as much & make sure its still > 1
@@ -333,17 +321,38 @@ public class StealthAgent
         } else {
             cost = euclidian_distance(src, dst) * 1.5f;
         }
-
-        int numEnemies = towardEnemies(src, dst, state);
-        if (numEnemies > 0) {
-            cost = (cost + 1f) * ((float) (4*numEnemies));
+    
+        // Check the distance to all archers and increase the cost if we're near an archer
+        for (UnitView archer : this.getArchers()) {
+            Vertex archerPos = new Vertex(archer.getXPosition(), archer.getYPosition());
+            float distance = chebyshevDistance(dst, archerPos);
+            
+            // Archer attack radius = 2. Stay away by 3 tiles at all times
+            if (distance < 4) {
+                cost += 10f;
+            }
         }
         return cost;
     }
 
+    public float chebyshevDistance(Vertex v1, Vertex v2) {
+        return Math.max(Math.abs(v1.getXCoordinate() - v2.getXCoordinate()), Math.abs(v1.getYCoordinate() - v2.getYCoordinate()));
+    }
+
     public boolean shouldReplacePlan(StateView state, ExtraParams extraParams)
     {
-        List<UnitView> enemyUnits = state.getAllUnits();
+        //Grab current Vertex of player
+        UnitView unit = state.getUnit(getMyUnitID());
+        Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
+        
+        List<UnitView> enemyUnits = this.getArchers();
+        for (UnitView enemy : enemyUnits) {
+            Vertex enemyPos = new Vertex(enemy.getXPosition(), enemy.getYPosition());
+            if (chebyshevDistance(current, enemyPos) <= 3) {
+                System.out.println("In death range. Reevaluating plan");
+                return true;
+            }
+        }
         return false;
     }
 
