@@ -4,6 +4,15 @@
         <ID>0</ID>
         <unit>
             <ID>2</ID>
+            <currentHealth>60</currentHealth>
+            <xPosition>1</xPosition>
+            <yPosition>8</yPosition>
+            <templateID>5</templateID>
+            <cargoAmount>0</cargoAmount>
+            <progressAmount>0</progressAmount>
+        </unit>
+        <unit>
+            <ID>3</ID>
             <currentHealth>300</currentHealth>
             <xPosition>0</xPosition>
             <yPosition>0</yPosition>
@@ -13,10 +22,10 @@
         </unit>
         <unit>
             <ID>4</ID>
-            <currentHealth>300</currentHealth>
-            <xPosition>1</xPosition>
+            <currentHealth>30</currentHealth>
+            <xPosition>3</xPosition>
             <yPosition>7</yPosition>
-            <templateID>5</templateID>
+            <templateID>23</templateID>
             <cargoAmount>0</cargoAmount>
             <progressAmount>0</progressAmount>
         </unit>
@@ -91,7 +100,7 @@
     <player>
         <ID>1</ID>
         <unit>
-            <ID>9</ID>
+            <ID>8</ID>
             <currentHealth>100</currentHealth>
             <xPosition>5</xPosition>
             <yPosition>1</yPosition>
@@ -115,12 +124,12 @@
             <canGather>true</canGather>
             <canBuild>false</canBuild>
             <canMove>true</canMove>
-            <canAcceptGold>false</canAcceptGold>
+            <canAcceptGold>true</canAcceptGold>
             <canAcceptWood>false</canAcceptWood>
             <foodProvided>0</foodProvided>
             <character>102</character>
             <goldGatherRate>100</goldGatherRate>
-            <woodGatherRate>100</woodGatherRate>
+            <woodGatherRate>0</woodGatherRate>
             <durationGatherWood>1</durationGatherWood>
             <durationGatherGold>1</durationGatherGold>
             <durationMove>1</durationMove>
@@ -141,7 +150,7 @@
     <resourceNode>
         <ID>580</ID>
         <type>GOLD_MINE</type>
-        <xPosition>0</xPosition>
+        <xPosition>3</xPosition>
         <yPosition>9</yPosition>
         <initialAmount>0</initialAmount>
         <amountRemaining>500</amountRemaining>
@@ -208,7 +217,7 @@
         <xPosition>2</xPosition>
         <yPosition>3</yPosition>
         <initialAmount>0</initialAmount>
-        <amountRemaining>400</amountRemaining>
+        <amountRemaining>5000</amountRemaining>
     </resourceNode>
     <resourceNode>
         <ID>19</ID>

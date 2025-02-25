@@ -15,7 +15,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.PriorityQueue;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,20 +37,20 @@ import edu.bu.pas.stealth.graph.Path;                       // see the documenta
 public class StealthAgent
     extends AStarAgent
 {
-    public class ExtraExtraParams extends ExtraParams{
-        public ExtraExtraParams(Object param) {
-            this.setParam(param);
-        }
-        private Object param = new Object();
+    public class VertexExtraParams extends AStarAgent.ExtraParams {
+        private Vertex vertex;
     
-        public void setParam(Object param) {
-            this.param = param;
+        public VertexExtraParams(Vertex vertex) {
+            this.vertex = vertex;
         }
     
-        public Object getParam() {
-            return this.param;
+        public Vertex getVertex() {
+            return vertex;
         }
     
+        public void setVertex(Vertex vertex) {
+            this.vertex = vertex;
+        }
     }
 
     // Fields of this class
@@ -62,8 +65,7 @@ public class StealthAgent
     private boolean gold = false;
     private ArrayList<UnitView> archers = new ArrayList<>();
     private Vertex townhall_coords = new Vertex(0,0);
-    private Path parent_path;
-
+    private List<Vertex> instructions = new ArrayList<>();
 
     public boolean isValid(Vertex vert, StateView state, Vertex goal) {
         int x = vert.getXCoordinate();
@@ -129,7 +131,6 @@ public class StealthAgent
         }
         this.archers = temp;
     }
-
     public final ArrayList<UnitView> getArchers() {
         return this.archers;
     }
@@ -141,17 +142,21 @@ public class StealthAgent
         Vertex goal = new Vertex(x, y);
         this.townhall_coords = goal;
     }
-
     public final Vertex getTownhallCoords() {
         return this.townhall_coords;
     }
 
-    public final Path getParentPath() {
-        return this.parent_path;
+    public void setInstructions(Path path) {
+        List<Vertex> instructions = new ArrayList<>();
+        while (path != null) {
+            instructions.add(path.getDestination());  // Add each vertex to the instructions
+            path = path.getParentPath();  // Move to the parent path
+        }
+        Collections.reverse(instructions);  // Reverse the list to start from the source
+        this.instructions = instructions;
     }
-
-    public void setParentPath(Path prevPath) {
-        this.parent_path = prevPath;
+    public final List<Vertex> getInstructions() {
+        return this.instructions;
     }
 
     ///////////////////////////////////////// Sepia methods to override ///////////////////////////////////
@@ -195,15 +200,10 @@ public class StealthAgent
 
         // Set starting coords so we know where to return to
         UnitView unit = state.getUnit(getMyUnitID());
-        int agentX = unit.getXPosition();
-        int agentY = unit.getYPosition();
-        this.setStart_X(agentX);
-        this.setStart_Y(agentY);
-        System.out.println(this.getStart_X() + " " + this.getStart_Y());
-
-        // Set parent path
-        this.parent_path = (new Path(new Vertex(agentX, agentY)));
+        Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
         
+        this.setInstructions((aStarSearch(current, townhall_coords, state, null)));
+
         return null;
     }
     
@@ -217,21 +217,20 @@ public class StealthAgent
     public Map<Integer, Action> middleStep(StateView state, HistoryView history) {
         Map<Integer, Action> actions = new HashMap<Integer, Action>();
 
-        //Use aStarSearch to grab shortest path --> grab destination vertex
         UnitView unit = state.getUnit(getMyUnitID()); 
         Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
-        Path newPath = aStarSearch(current, this.townhall_coords, state, new ExtraExtraParams(this.getParentPath()));
-        this.setParentPath(newPath);
-        Vertex newVertex = newPath.getDestination();
-
-
-        if (shouldReplacePlan(state, new ExtraParams())) {
-            newPath = aStarSearch(current, this.townhall_coords, state, new ExtraExtraParams(this.getParentPath()));
-            this.setParentPath(newPath);
-            newVertex = newPath.getDestination();
+        if (!this.getInstructions().isEmpty()) {
+            this.getInstructions().remove(0);
+            Vertex nextMove = this.getInstructions().get(0);
+            if (!this.shouldReplacePlan(state, new VertexExtraParams(nextMove))) {
+                actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
+            } else {
+                this.setInstructions(aStarSearch(current, this.townhall_coords, state, null));
+            }
         }
-       
-        actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, newVertex)));
+
+        
+        return actions;
         /**
             I would suggest implementing a state machine here to calculate a path when neccessary.
             For instance beginning with something like:
@@ -248,8 +247,6 @@ public class StealthAgent
             once you have this working I would worry about trying to detect when you kill the townhall
             so that you implement escaping
          */
-
-        return actions;
     }
 
     ////////////////////////////////// End of Sepia methods to override //////////////////////////////////
@@ -263,25 +260,39 @@ public class StealthAgent
     }
 
     public Path aStarSearch(Vertex src, Vertex dst, StateView state, ExtraParams extraParams) {
-        Collection<Vertex> neighbors = getNeighbors(src, state, extraParams);
-        HashMap<Float, Vertex> neighbor_costs = new HashMap <>();
-        float min_cost = Float.POSITIVE_INFINITY;
+        PriorityQueue<Path> openSet = new PriorityQueue<>(Comparator.comparingDouble(path -> path.getTrueCost() + path.getEstimatedPathCostToGoal()));
+        HashMap<Vertex, Float> totalCost = new HashMap<>();
+        HashMap<Vertex, Vertex> parents = new HashMap<>();
 
-        for (Vertex neighbor : neighbors) {
-            float cost = getEdgeWeight(src, neighbor, state, extraParams);
-            System.out.println(neighbor.toString() + " " + cost);
-            neighbor_costs.put(cost, neighbor);
-            if (cost < min_cost) {
-                min_cost = cost;
+        openSet.add(new Path(src)); // Start from the source
+        totalCost.put(src, 0f);
+        while (!openSet.isEmpty()) {
+            Path currentPath = openSet.poll();
+            Vertex currentTile = currentPath.getDestination();
+
+            // If we are 1 tile adjacent to townhall
+            if (chebyshevDistance(currentTile, dst) == 1) {
+                return currentPath;
             }
+
+            // Expand neighbors
+            for (Vertex neighbor : getNeighbors(currentTile, state, extraParams)) {
+                float edgeCost = getEdgeWeight(currentTile, neighbor, state, extraParams);
+                float tenantiveCost = currentPath.getTrueCost() + edgeCost;
+                float heuristicCost = euclidian_distance(neighbor, dst);
+
+                if (!totalCost.containsKey(neighbor) || tenantiveCost < totalCost.get(neighbor)) {
+                    totalCost.put(neighbor, tenantiveCost);
+                    parents.put(neighbor, currentTile);
+
+                    //New Path: destination vertex, true edge cost, estimate edge cost, parent path
+                    openSet.add(new Path(neighbor, edgeCost, heuristicCost, currentPath));
+                }
+            }
+
         }
 
-        Vertex next_vertex = neighbor_costs.get(min_cost);
-        System.out.println(next_vertex.toString() + " agent's shortest path is " +  min_cost);
-        Path next_move = new Path(next_vertex, min_cost, (Path) ((ExtraExtraParams) extraParams).getParam());;
-        // Grab vertex with smallest key (cost)
-        return next_move;
-        
+        return null;
     }
 
     public float euclidian_distance(Vertex d1, Vertex d2) {
@@ -319,17 +330,19 @@ public class StealthAgent
                 cost = 1;
             }
         } else {
-            cost = euclidian_distance(src, dst) * 1.5f;
+            cost = euclidian_distance(src, dst);
         }
     
         // Check the distance to all archers and increase the cost if we're near an archer
         for (UnitView archer : this.getArchers()) {
             Vertex archerPos = new Vertex(archer.getXPosition(), archer.getYPosition());
             float distance = chebyshevDistance(dst, archerPos);
+            float prevDistance =  chebyshevDistance(src, archerPos);
             
-            // Archer attack radius = 2. Stay away by 3 tiles at all times
-            if (distance < 4) {
-                cost += 10f;
+            //Additional cost is inverse the distance to enemy by map size
+            cost += (float) Math.pow(2, -distance);;
+            if (distance < prevDistance) {
+                cost += 2; 
             }
         }
         return cost;
@@ -341,18 +354,23 @@ public class StealthAgent
 
     public boolean shouldReplacePlan(StateView state, ExtraParams extraParams)
     {
-        //Grab current Vertex of player
-        UnitView unit = state.getUnit(getMyUnitID());
-        Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
-        
-        List<UnitView> enemyUnits = this.getArchers();
-        for (UnitView enemy : enemyUnits) {
-            Vertex enemyPos = new Vertex(enemy.getXPosition(), enemy.getYPosition());
-            if (chebyshevDistance(current, enemyPos) <= 3) {
-                System.out.println("In death range. Reevaluating plan");
-                return true;
+        if (extraParams instanceof VertexExtraParams) {
+            VertexExtraParams vertexParams = (VertexExtraParams) extraParams;
+            Vertex neighbor = vertexParams.getVertex();
+            
+            // Make sure archers are not closing in on player
+            for (UnitView archer : this.getArchers()) {
+                Vertex archerPos = new Vertex(archer.getXPosition(), archer.getYPosition());
+                float distance = chebyshevDistance(neighbor, archerPos);
+                System.out.println("Distance of tile being considered from archer: " + neighbor.toString() + " ," + distance);
+                if (distance <= 3) {
+                    System.out.println("In death range. Reevaluating plan");
+                    return true;
+                }
             }
+            return false;
         }
+        System.out.println("WARNING. NextMove was not evaluated correctly in should replace plan");
         return false;
     }
 
