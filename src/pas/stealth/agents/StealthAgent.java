@@ -106,8 +106,6 @@ public class StealthAgent
 
     public final int getStart_Y() {return this.start_y; }
 
-    public final boolean getTownhall() { return this.townhall; }
-
     public final boolean getGold() { return this.gold; }
 
     public void setEnemyChebyshevSightLimit(int i) { this.enemyChebyshevSightLimit = i; }
@@ -116,11 +114,10 @@ public class StealthAgent
 
     public void setStart_Y(int i) { this.start_y = i; }
 
-    public void killTownhall() { this.townhall = true; }
-
     public void gotGold() { this.gold = true; }
 
     public void setArchers(StateView state) {
+        // Used to keep track of enemy positions on map
         ArrayList<UnitView> temp = new ArrayList<>();
         List<UnitView> enemyUnits = state.getAllUnits();
         Map<Integer, Vertex> newEnemyPositions = new HashMap<>();
@@ -146,6 +143,7 @@ public class StealthAgent
     }
 
     public void setTownhallCoords(StateView state) {
+        // Used for path finding to townhall
         UnitView townHall = state.getUnit(getEnemyBaseUnitID());
         int x = townHall.getXPosition();
         int y = townHall.getYPosition();
@@ -157,6 +155,7 @@ public class StealthAgent
     }
 
     public void setInstructions(Path path) {
+        // Converts AStar path returned into list of vertecies to move to
         List<Vertex> instructions = new ArrayList<>();
         while (path != null) {
             instructions.add(path.getDestination());  // Add each vertex to the instructions
@@ -228,20 +227,31 @@ public class StealthAgent
         Map<Integer, Action> actions = new HashMap<Integer, Action>();
         UnitView unit = state.getUnit(getMyUnitID()); 
         Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
-        if (!this.getInstructions().isEmpty()) {
-            if (!this.shouldReplacePlan(state, null)) {
-                this.getInstructions().remove(0);
-                Vertex nextMove = this.getInstructions().get(0);
-                actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
-            } else {
-                this.setInstructions(aStarSearch(current, this.townhall_coords, state, null));
-                this.getInstructions().remove(0);
-                Vertex nextMove = this.getInstructions().get(0);
-                System.out.println(nextMove.toString());
-                actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
-            }
-        }
 
+        // Are we near the townhall? Attack!
+        if (chebyshevDistance(current, this.getTownhallCoords()) == 1 && this.getAgentPhase() == AStarAgent.AgentPhase.INFILTRATE) {
+            if (!townHallDead(state)) {
+                actions.put(getMyUnitID(), Action.createPrimitiveAttack(getMyUnitID(), getEnemyBaseUnitID()));
+            } else {
+                this.setAgentPhase(AStarAgent.AgentPhase.EXFILTRATE);
+            }
+        // Else --> shouldReplacePlan & Astarsearch path finding
+        } else {
+            if (!this.getInstructions().isEmpty()) {
+                if (!this.shouldReplacePlan(state, null)) {
+                    this.getInstructions().remove(0);
+                    Vertex nextMove = this.getInstructions().get(0);
+                    actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
+                } else {
+                    // Reset instructions and move to new lowest risk tile
+                    this.setInstructions(aStarSearch(current, this.townhall_coords, state, null));
+                    this.getInstructions().remove(0);
+                    Vertex nextMove = this.getInstructions().get(0);
+                    actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
+                }
+            }    
+        }
+       
         
         return actions;
         /**
@@ -262,13 +272,16 @@ public class StealthAgent
          */
     }
 
+    /*
+     * if (unit.getID() == getEnemyBaseUnitID()) {
+     */
+
     ////////////////////////////////// End of Sepia methods to override //////////////////////////////////
 
     /////////////////////////////////// AStarAgent methods to override ///////////////////////////////////
 
     public Collection<Vertex> getNeighbors(Vertex v, StateView state, ExtraParams extraParams) {
         Collection<Vertex> neighbors = getValidNeighbors(v, state);
-        
         return neighbors;
     }
 
@@ -319,6 +332,7 @@ public class StealthAgent
 
 
     public boolean towardTownhall(Vertex current, Vertex dest, StateView state) {
+        // If the neighbor tile we are evaluating is closer to townhall
         UnitView townHall = state.getUnit(getEnemyBaseUnitID());
         int th_x = townHall.getXPosition();
         int th_y = townHall.getYPosition();
@@ -351,7 +365,7 @@ public class StealthAgent
             Vertex archerPos = new Vertex(archer.getXPosition(), archer.getYPosition());
             float distance = chebyshevDistance(dst, archerPos);
             
-            //Additional cost is inverse the distance to enemy by map size
+            // Additional cost is inverse the distance to enemy by map size
             cost += (state.getYExtent()/distance);
             if (distance <= 2) {
                 cost += (state.getYExtent()/distance);
@@ -365,6 +379,7 @@ public class StealthAgent
     }
 
     public boolean shouldReplacePlan(StateView state, ExtraParams extraParams) {
+        // Enemy moves. Replace plan and reset enemyPosition variable
         Map<Integer, Vertex> currentEnemyPositions = getPreviousEnemyPositions();
         List<UnitView> enemyUnits = state.getAllUnits();
 
@@ -375,13 +390,23 @@ public class StealthAgent
             if(unitTypeName.equals("Archer")) {
                 Vertex currentPos = new Vertex(enemy.getXPosition(), enemy.getYPosition());
                 if (!currentPos.equals(lastKnownPosition)) {
-                    System.out.println("Enemies moved. Reevaluate weights and path");
                     this.setArchers(state);
                     return true;
                 }
             }
         }
         return false;
+    }
+    public boolean townHallDead(StateView state) {
+        // Used to switch to exfiltrate mode
+        List<UnitView> enemyUnits = state.getAllUnits();
+        for (UnitView enemy: enemyUnits) {
+           if (enemy.getID() == getEnemyBaseUnitID()) {
+            return false;
+           }
+        }
+        System.out.println("CHANGE TO EXFILTRATE");
+        return true;
     }
 
     //////////////////////////////// End of AStarAgent methods to override ///////////////////////////////
