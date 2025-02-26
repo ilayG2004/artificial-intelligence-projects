@@ -32,20 +32,41 @@
             <damageLogList>
                 <roundNumber>3</roundNumber>
                 <damageLog>
-                    <attackerID>3</attackerID>
+                    <attackerID>4</attackerID>
                     <attackerController>0</attackerController>
                     <defenderID>8</defenderID>
                     <defenderController>1</defenderController>
                     <damage>214</damage>
                 </damageLog>
-                <damageLog>
-                    <attackerID>4</attackerID>
-                    <attackerController>0</attackerController>
-                    <defenderID>8</defenderID>
-                    <defenderController>1</defenderController>
-                    <damage>155</damage>
-                </damageLog>
             </damageLogList>
+            <resourcePickupLogList>
+                <roundNumber>0</roundNumber>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>1</roundNumber>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>2</roundNumber>
+                <resourcePickupLog>
+                    <pickupAmount>100</pickupAmount>
+                    <gathererID>3</gathererID>
+                    <controller>0</controller>
+                    <nodeID>15</nodeID>
+                    <nodeType>TREE</nodeType>
+                    <resourceType>WOOD</resourceType>
+                </resourcePickupLog>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>3</roundNumber>
+                <resourcePickupLog>
+                    <pickupAmount>100</pickupAmount>
+                    <gathererID>3</gathererID>
+                    <controller>0</controller>
+                    <nodeID>15</nodeID>
+                    <nodeType>TREE</nodeType>
+                    <resourceType>WOOD</resourceType>
+                </resourcePickupLog>
+            </resourcePickupLogList>
         </eventLogger>
         <commandsIssued>
             <actionList>
@@ -55,7 +76,7 @@
                     <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>3</unitId>
                         <actionType>COMPOUNDGATHER</actionType>
-                        <targetId>19</targetId>
+                        <targetId>15</targetId>
                     </action>
                 </actionEntry>
                 <actionEntry>
@@ -63,7 +84,7 @@
                     <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>4</unitId>
                         <actionType>COMPOUNDGATHER</actionType>
-                        <targetId>15</targetId>
+                        <targetId>14</targetId>
                     </action>
                 </actionEntry>
             </actionList>
@@ -79,8 +100,8 @@
                     <unitID>3</unitID>
                     <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>3</unitId>
-                        <actionType>PRIMITIVEATTACK</actionType>
-                        <targetId>8</targetId>
+                        <actionType>COMPOUNDGATHER</actionType>
+                        <targetId>15</targetId>
                     </action>
                 </actionEntry>
                 <actionEntry>
@@ -102,7 +123,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>19</targetId>
+                            <targetId>15</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -113,7 +134,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>4</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>15</targetId>
+                            <targetId>14</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -127,7 +148,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>19</targetId>
+                            <targetId>15</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -138,7 +159,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>4</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>15</targetId>
+                            <targetId>14</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -152,9 +173,9 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>19</targetId>
+                            <targetId>15</targetId>
                         </action>
-                        <feedback>INCOMPLETE</feedback>
+                        <feedback>COMPLETED</feedback>
                     </actionResult>
                 </actionResultEntry>
                 <actionResultEntry>
@@ -163,7 +184,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>4</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>15</targetId>
+                            <targetId>14</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -176,8 +197,8 @@
                     <actionResult>
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
-                            <actionType>PRIMITIVEATTACK</actionType>
-                            <targetId>8</targetId>
+                            <actionType>COMPOUNDGATHER</actionType>
+                            <targetId>15</targetId>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -253,8 +274,8 @@
                     <actionResult>
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
-                            <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTHEAST</direction>
+                            <actionType>PRIMITIVEGATHER</actionType>
+                            <direction>NORTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -276,10 +297,10 @@
                 <actionResultEntry>
                     <unitID>3</unitID>
                     <actionResult>
-                        <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                        <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
-                            <actionType>PRIMITIVEATTACK</actionType>
-                            <targetId>8</targetId>
+                            <actionType>PRIMITIVEGATHER</actionType>
+                            <direction>NORTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -329,20 +350,41 @@
             <damageLogList>
                 <roundNumber>3</roundNumber>
                 <damageLog>
-                    <attackerID>3</attackerID>
+                    <attackerID>4</attackerID>
                     <attackerController>0</attackerController>
                     <defenderID>8</defenderID>
                     <defenderController>1</defenderController>
                     <damage>214</damage>
                 </damageLog>
-                <damageLog>
-                    <attackerID>4</attackerID>
-                    <attackerController>0</attackerController>
-                    <defenderID>8</defenderID>
-                    <defenderController>1</defenderController>
-                    <damage>155</damage>
-                </damageLog>
             </damageLogList>
+            <resourcePickupLogList>
+                <roundNumber>0</roundNumber>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>1</roundNumber>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>2</roundNumber>
+                <resourcePickupLog>
+                    <pickupAmount>100</pickupAmount>
+                    <gathererID>3</gathererID>
+                    <controller>0</controller>
+                    <nodeID>15</nodeID>
+                    <nodeType>TREE</nodeType>
+                    <resourceType>WOOD</resourceType>
+                </resourcePickupLog>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>3</roundNumber>
+                <resourcePickupLog>
+                    <pickupAmount>100</pickupAmount>
+                    <gathererID>3</gathererID>
+                    <controller>0</controller>
+                    <nodeID>15</nodeID>
+                    <nodeType>TREE</nodeType>
+                    <resourceType>WOOD</resourceType>
+                </resourcePickupLog>
+            </resourcePickupLogList>
         </eventLogger>
         <commandsIssued>
             <actionList>
@@ -355,7 +397,7 @@
                     <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>8</unitId>
                         <actionType>PRIMITIVEMOVE</actionType>
-                        <direction>SOUTH</direction>
+                        <direction>SOUTHEAST</direction>
                     </action>
                 </actionEntry>
             </actionList>
@@ -366,7 +408,18 @@
                     <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>8</unitId>
                         <actionType>PRIMITIVEMOVE</actionType>
-                        <direction>SOUTH</direction>
+                        <direction>SOUTHEAST</direction>
+                    </action>
+                </actionEntry>
+            </actionList>
+            <actionList>
+                <roundNumber>3</roundNumber>
+                <actionEntry>
+                    <unitID>8</unitID>
+                    <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                        <unitId>8</unitId>
+                        <actionType>PRIMITIVEMOVE</actionType>
+                        <direction>SOUTHEAST</direction>
                     </action>
                 </actionEntry>
             </actionList>
@@ -383,7 +436,7 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -397,7 +450,21 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
+                        </action>
+                        <feedback>COMPLETED</feedback>
+                    </actionResult>
+                </actionResultEntry>
+            </actionResultList>
+            <actionResultList>
+                <roundNumber>3</roundNumber>
+                <actionResultEntry>
+                    <unitID>8</unitID>
+                    <actionResult>
+                        <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                            <unitId>8</unitId>
+                            <actionType>PRIMITIVEMOVE</actionType>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -416,7 +483,7 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -430,7 +497,21 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
+                        </action>
+                        <feedback>COMPLETED</feedback>
+                    </actionResult>
+                </actionResultEntry>
+            </actionResultList>
+            <actionResultList>
+                <roundNumber>3</roundNumber>
+                <actionResultEntry>
+                    <unitID>8</unitID>
+                    <actionResult>
+                        <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                            <unitId>8</unitId>
+                            <actionType>PRIMITIVEMOVE</actionType>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -469,20 +550,41 @@
             <damageLogList>
                 <roundNumber>3</roundNumber>
                 <damageLog>
-                    <attackerID>3</attackerID>
+                    <attackerID>4</attackerID>
                     <attackerController>0</attackerController>
                     <defenderID>8</defenderID>
                     <defenderController>1</defenderController>
                     <damage>214</damage>
                 </damageLog>
-                <damageLog>
-                    <attackerID>4</attackerID>
-                    <attackerController>0</attackerController>
-                    <defenderID>8</defenderID>
-                    <defenderController>1</defenderController>
-                    <damage>155</damage>
-                </damageLog>
             </damageLogList>
+            <resourcePickupLogList>
+                <roundNumber>0</roundNumber>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>1</roundNumber>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>2</roundNumber>
+                <resourcePickupLog>
+                    <pickupAmount>100</pickupAmount>
+                    <gathererID>3</gathererID>
+                    <controller>0</controller>
+                    <nodeID>15</nodeID>
+                    <nodeType>TREE</nodeType>
+                    <resourceType>WOOD</resourceType>
+                </resourcePickupLog>
+            </resourcePickupLogList>
+            <resourcePickupLogList>
+                <roundNumber>3</roundNumber>
+                <resourcePickupLog>
+                    <pickupAmount>100</pickupAmount>
+                    <gathererID>3</gathererID>
+                    <controller>0</controller>
+                    <nodeID>15</nodeID>
+                    <nodeType>TREE</nodeType>
+                    <resourceType>WOOD</resourceType>
+                </resourcePickupLog>
+            </resourcePickupLogList>
         </eventLogger>
         <commandsIssued>
             <actionList>
@@ -492,7 +594,7 @@
                     <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>3</unitId>
                         <actionType>COMPOUNDGATHER</actionType>
-                        <targetId>19</targetId>
+                        <targetId>15</targetId>
                     </action>
                 </actionEntry>
                 <actionEntry>
@@ -500,7 +602,7 @@
                     <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>4</unitId>
                         <actionType>COMPOUNDGATHER</actionType>
-                        <targetId>15</targetId>
+                        <targetId>14</targetId>
                     </action>
                 </actionEntry>
             </actionList>
@@ -511,7 +613,7 @@
                     <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>8</unitId>
                         <actionType>PRIMITIVEMOVE</actionType>
-                        <direction>SOUTH</direction>
+                        <direction>SOUTHEAST</direction>
                     </action>
                 </actionEntry>
             </actionList>
@@ -522,7 +624,7 @@
                     <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>8</unitId>
                         <actionType>PRIMITIVEMOVE</actionType>
-                        <direction>SOUTH</direction>
+                        <direction>SOUTHEAST</direction>
                     </action>
                 </actionEntry>
             </actionList>
@@ -532,8 +634,8 @@
                     <unitID>3</unitID>
                     <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                         <unitId>3</unitId>
-                        <actionType>PRIMITIVEATTACK</actionType>
-                        <targetId>8</targetId>
+                        <actionType>COMPOUNDGATHER</actionType>
+                        <targetId>15</targetId>
                     </action>
                 </actionEntry>
                 <actionEntry>
@@ -542,6 +644,14 @@
                         <unitId>4</unitId>
                         <actionType>PRIMITIVEATTACK</actionType>
                         <targetId>8</targetId>
+                    </action>
+                </actionEntry>
+                <actionEntry>
+                    <unitID>8</unitID>
+                    <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                        <unitId>8</unitId>
+                        <actionType>PRIMITIVEMOVE</actionType>
+                        <direction>SOUTHEAST</direction>
                     </action>
                 </actionEntry>
             </actionList>
@@ -555,7 +665,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>19</targetId>
+                            <targetId>15</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -566,7 +676,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>4</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>15</targetId>
+                            <targetId>14</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -580,7 +690,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>19</targetId>
+                            <targetId>15</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -591,7 +701,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>4</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>15</targetId>
+                            <targetId>14</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -602,7 +712,7 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -616,9 +726,9 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>19</targetId>
+                            <targetId>15</targetId>
                         </action>
-                        <feedback>INCOMPLETE</feedback>
+                        <feedback>COMPLETED</feedback>
                     </actionResult>
                 </actionResultEntry>
                 <actionResultEntry>
@@ -627,7 +737,7 @@
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>4</unitId>
                             <actionType>COMPOUNDGATHER</actionType>
-                            <targetId>15</targetId>
+                            <targetId>14</targetId>
                         </action>
                         <feedback>INCOMPLETE</feedback>
                     </actionResult>
@@ -638,7 +748,7 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -651,8 +761,8 @@
                     <actionResult>
                         <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
-                            <actionType>PRIMITIVEATTACK</actionType>
-                            <targetId>8</targetId>
+                            <actionType>COMPOUNDGATHER</actionType>
+                            <targetId>15</targetId>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -664,6 +774,17 @@
                             <unitId>4</unitId>
                             <actionType>PRIMITIVEATTACK</actionType>
                             <targetId>8</targetId>
+                        </action>
+                        <feedback>COMPLETED</feedback>
+                    </actionResult>
+                </actionResultEntry>
+                <actionResultEntry>
+                    <unitID>8</unitID>
+                    <actionResult>
+                        <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                            <unitId>8</unitId>
+                            <actionType>PRIMITIVEMOVE</actionType>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -726,7 +847,7 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -739,8 +860,8 @@
                     <actionResult>
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
-                            <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTHEAST</direction>
+                            <actionType>PRIMITIVEGATHER</actionType>
+                            <direction>NORTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -762,7 +883,7 @@
                         <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>8</unitId>
                             <actionType>PRIMITIVEMOVE</actionType>
-                            <direction>SOUTH</direction>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -773,10 +894,10 @@
                 <actionResultEntry>
                     <unitID>3</unitID>
                     <actionResult>
-                        <action xsi:type="TargetedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                        <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                             <unitId>3</unitId>
-                            <actionType>PRIMITIVEATTACK</actionType>
-                            <targetId>8</targetId>
+                            <actionType>PRIMITIVEGATHER</actionType>
+                            <direction>NORTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>
@@ -788,6 +909,17 @@
                             <unitId>4</unitId>
                             <actionType>PRIMITIVEATTACK</actionType>
                             <targetId>8</targetId>
+                        </action>
+                        <feedback>COMPLETED</feedback>
+                    </actionResult>
+                </actionResultEntry>
+                <actionResultEntry>
+                    <unitID>8</unitID>
+                    <actionResult>
+                        <action xsi:type="DirectedAction" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                            <unitId>8</unitId>
+                            <actionType>PRIMITIVEMOVE</actionType>
+                            <direction>SOUTHEAST</direction>
                         </action>
                         <feedback>COMPLETED</feedback>
                     </actionResult>

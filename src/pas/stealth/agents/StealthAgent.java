@@ -66,6 +66,7 @@ public class StealthAgent
     private ArrayList<UnitView> archers = new ArrayList<>();
     private Vertex townhall_coords = new Vertex(0,0);
     private List<Vertex> instructions = new ArrayList<>();
+    private Map<Integer, Vertex> previousEnemyPositions = new HashMap<>();
 
     public boolean isValid(Vertex vert, StateView state, Vertex goal) {
         int x = vert.getXCoordinate();
@@ -122,15 +123,24 @@ public class StealthAgent
     public void setArchers(StateView state) {
         ArrayList<UnitView> temp = new ArrayList<>();
         List<UnitView> enemyUnits = state.getAllUnits();
+        Map<Integer, Vertex> newEnemyPositions = new HashMap<>();
+
         for (int i = 0; i < enemyUnits.size(); i++) {
             UnitView enemy = enemyUnits.get(i);
             String unitTypeName = enemy.getTemplateView().getName();
             if(unitTypeName.equals("Archer")) {
                 temp.add(enemy);
+                Vertex currentPos = new Vertex(enemy.getXPosition(), enemy.getYPosition());
+                newEnemyPositions.put(enemy.getID(), currentPos);
             }
         }
         this.archers = temp;
+        this.previousEnemyPositions = newEnemyPositions; 
     }
+    public final Map<Integer, Vertex> getPreviousEnemyPositions() {
+        return this.previousEnemyPositions;
+    }
+
     public final ArrayList<UnitView> getArchers() {
         return this.archers;
     }
@@ -216,16 +226,19 @@ public class StealthAgent
     @Override
     public Map<Integer, Action> middleStep(StateView state, HistoryView history) {
         Map<Integer, Action> actions = new HashMap<Integer, Action>();
-
         UnitView unit = state.getUnit(getMyUnitID()); 
         Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
         if (!this.getInstructions().isEmpty()) {
-            this.getInstructions().remove(0);
-            Vertex nextMove = this.getInstructions().get(0);
-            if (!this.shouldReplacePlan(state, new VertexExtraParams(nextMove))) {
+            if (!this.shouldReplacePlan(state, null)) {
+                this.getInstructions().remove(0);
+                Vertex nextMove = this.getInstructions().get(0);
                 actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
             } else {
                 this.setInstructions(aStarSearch(current, this.townhall_coords, state, null));
+                this.getInstructions().remove(0);
+                Vertex nextMove = this.getInstructions().get(0);
+                System.out.println(nextMove.toString());
+                actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
             }
         }
 
@@ -337,12 +350,11 @@ public class StealthAgent
         for (UnitView archer : this.getArchers()) {
             Vertex archerPos = new Vertex(archer.getXPosition(), archer.getYPosition());
             float distance = chebyshevDistance(dst, archerPos);
-            float prevDistance =  chebyshevDistance(src, archerPos);
             
             //Additional cost is inverse the distance to enemy by map size
-            cost += (float) Math.pow(2, -distance);;
-            if (distance < prevDistance) {
-                cost += 2; 
+            cost += (state.getYExtent()/distance);
+            if (distance <= 2) {
+                cost += (state.getYExtent()/distance);
             }
         }
         return cost;
@@ -352,25 +364,23 @@ public class StealthAgent
         return Math.max(Math.abs(v1.getXCoordinate() - v2.getXCoordinate()), Math.abs(v1.getYCoordinate() - v2.getYCoordinate()));
     }
 
-    public boolean shouldReplacePlan(StateView state, ExtraParams extraParams)
-    {
-        if (extraParams instanceof VertexExtraParams) {
-            VertexExtraParams vertexParams = (VertexExtraParams) extraParams;
-            Vertex neighbor = vertexParams.getVertex();
-            
-            // Make sure archers are not closing in on player
-            for (UnitView archer : this.getArchers()) {
-                Vertex archerPos = new Vertex(archer.getXPosition(), archer.getYPosition());
-                float distance = chebyshevDistance(neighbor, archerPos);
-                System.out.println("Distance of tile being considered from archer: " + neighbor.toString() + " ," + distance);
-                if (distance <= 3) {
-                    System.out.println("In death range. Reevaluating plan");
+    public boolean shouldReplacePlan(StateView state, ExtraParams extraParams) {
+        Map<Integer, Vertex> currentEnemyPositions = getPreviousEnemyPositions();
+        List<UnitView> enemyUnits = state.getAllUnits();
+
+        for (int i = 0; i < enemyUnits.size(); i++) {
+            UnitView enemy = enemyUnits.get(i);
+            Vertex lastKnownPosition = currentEnemyPositions.get(enemy.getID());
+            String unitTypeName = enemy.getTemplateView().getName();
+            if(unitTypeName.equals("Archer")) {
+                Vertex currentPos = new Vertex(enemy.getXPosition(), enemy.getYPosition());
+                if (!currentPos.equals(lastKnownPosition)) {
+                    System.out.println("Enemies moved. Reevaluate weights and path");
+                    this.setArchers(state);
                     return true;
                 }
             }
-            return false;
         }
-        System.out.println("WARNING. NextMove was not evaluated correctly in should replace plan");
         return false;
     }
 
