@@ -379,9 +379,9 @@ public class StealthAgent
             // Additional cost is inverse the distance to enemy by map size
             cost += (state.getYExtent()/distance);
             if (distance <= 2) {
-                cost += (state.getYExtent()/distance);
+                cost += ((state.getYExtent()/distance) * 2);
             } else if (distance <=3 && distance > 2) {
-                cost += ((state.getYExtent()/distance)/2);
+                cost += ((state.getYExtent()/distance) * 2);
             }
         }
         return cost;
