@@ -65,6 +65,7 @@ public class StealthAgent
     private boolean gold = false;
     private ArrayList<UnitView> archers = new ArrayList<>();
     private Vertex townhall_coords = new Vertex(0,0);
+    private Vertex goalVertex = new Vertex(0, 0);
     private List<Vertex> instructions = new ArrayList<>();
     private Map<Integer, Vertex> previousEnemyPositions = new HashMap<>();
 
@@ -200,6 +201,7 @@ public class StealthAgent
         }
 
         this.setTownhallCoords(state);
+        this.goalVertex = this.getTownhallCoords();
         this.setArchers(state);
 
         // lookup an attribute from the unit's "template" (which you can find in the map .xml files)
@@ -209,6 +211,8 @@ public class StealthAgent
 
         // Set starting coords so we know where to return to
         UnitView unit = state.getUnit(getMyUnitID());
+        this.start_x = unit.getXPosition();
+        this.start_y = unit.getYPosition();
         Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
         
         this.setInstructions((aStarSearch(current, townhall_coords, state, null)));
@@ -244,7 +248,12 @@ public class StealthAgent
                     actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
                 } else {
                     // Reset instructions and move to new lowest risk tile
-                    this.setInstructions(aStarSearch(current, this.townhall_coords, state, null));
+                    if (this.getAgentPhase() == AStarAgent.AgentPhase.EXFILTRATE) {
+                        this.goalVertex = new Vertex(this.start_x, this.start_y);
+                        System.out.println(this.start_x);
+                        System.out.println(this.start_y);
+                    }
+                    this.setInstructions(aStarSearch(current, this.goalVertex, state, null));
                     this.getInstructions().remove(0);
                     Vertex nextMove = this.getInstructions().get(0);
                     actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
@@ -331,14 +340,11 @@ public class StealthAgent
     }
 
 
-    public boolean towardTownhall(Vertex current, Vertex dest, StateView state) {
+    public boolean towardGoal(Vertex current, Vertex dest, StateView state) {
         // If the neighbor tile we are evaluating is closer to townhall
-        UnitView townHall = state.getUnit(getEnemyBaseUnitID());
-        int th_x = townHall.getXPosition();
-        int th_y = townHall.getYPosition();
-        Vertex thVertex = new Vertex(th_x, th_y);
+        Vertex goal = this.goalVertex;
 
-        if (euclidian_distance(current, thVertex) > euclidian_distance(dest, thVertex)) {
+        if (euclidian_distance(current, goal) > euclidian_distance(dest, goal)) {
             return true;
         } else {
             return false;
@@ -351,7 +357,7 @@ public class StealthAgent
         float cost = 1f;
 
         // If the neighbor we are looking at it closer to the townhall make it cost half as much & make sure its still > 1
-        if (towardTownhall(src, dst, state)) {
+        if (towardGoal(src, dst, state)) {
             cost = (float) 0.5 * euclidian_distance(src, dst);
             if (cost < 1) {
                 cost = 1;
