@@ -182,6 +182,7 @@ public class StealthAgent
                                             HistoryView history)
     {
         super.initialStep(state, history); // call AStarAgent's initialStep() to set helpful fields and stuff
+        Map<Integer, Action> actions = new HashMap<Integer, Action>();
 
         // now some fields are set for us b/c we called AStarAgent's initialStep()
         // let's calculate how far away enemy units can see us...this will be the same for all units (except the base)
@@ -216,7 +217,11 @@ public class StealthAgent
         Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
         
         this.setInstructions((aStarSearch(current, townhall_coords, state, null)));
+        /*this.getInstructions().remove(0);
+        Vertex nextMove = this.getInstructions().get(0);
+        actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
 
+        return actions;*/
         return null;
     }
     
@@ -232,53 +237,41 @@ public class StealthAgent
         UnitView unit = state.getUnit(getMyUnitID()); 
         Vertex current = new Vertex(unit.getXPosition(), unit.getYPosition());
 
-        // Are we near the townhall? Attack!
-        if (chebyshevDistance(current, this.getTownhallCoords()) == 1 && this.getAgentPhase() == AStarAgent.AgentPhase.INFILTRATE) {
-            if (!townHallDead(state)) {
-                actions.put(getMyUnitID(), Action.createPrimitiveAttack(getMyUnitID(), getEnemyBaseUnitID()));
-            } else {
-                this.setAgentPhase(AStarAgent.AgentPhase.EXFILTRATE);
-            }
-        // Else --> shouldReplacePlan & Astarsearch path finding
+        if (this.getAgentPhase() == AStarAgent.AgentPhase.EXFILTRATE && current.equals(this.goalVertex)) {
+            System.out.println("Do nothing");
         } else {
-            if (!this.getInstructions().isEmpty()) {
-                if (!this.shouldReplacePlan(state, null)) {
-                    this.getInstructions().remove(0);
-                    Vertex nextMove = this.getInstructions().get(0);
-                    actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
+            // Are we near the townhall? Attack!
+            if (chebyshevDistance(current, this.getTownhallCoords()) == 1 && this.getAgentPhase() == AStarAgent.AgentPhase.INFILTRATE) {
+                if (!townHallDead(state)) {
+                    actions.put(getMyUnitID(), Action.createPrimitiveAttack(getMyUnitID(), getEnemyBaseUnitID()));
                 } else {
-                    // Reset instructions and move to new lowest risk tile
-                    if (this.getAgentPhase() == AStarAgent.AgentPhase.EXFILTRATE) {
-                        this.goalVertex = new Vertex(this.start_x, this.start_y);
-                        System.out.println(this.start_x);
-                        System.out.println(this.start_y);
-                    }
+                    // Townhall's dead. Immediately start moving back to base
+                    this.setAgentPhase(AStarAgent.AgentPhase.EXFILTRATE);
+                    this.goalVertex = new Vertex(this.start_x, this.start_y);   
                     this.setInstructions(aStarSearch(current, this.goalVertex, state, null));
                     this.getInstructions().remove(0);
                     Vertex nextMove = this.getInstructions().get(0);
                     actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
                 }
-            }    
+            // Else --> shouldReplacePlan & Astarsearch path finding
+            } else {
+                if (!this.getInstructions().isEmpty()) {
+                    if (!this.shouldReplacePlan(state, null)) {
+                        this.getInstructions().remove(0);
+                        Vertex nextMove = this.getInstructions().get(0);
+                        actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
+                    } else {
+                        // Reset instructions and move to new lowest risk tile
+                        this.setInstructions(aStarSearch(current, this.goalVertex, state, null));
+                        this.getInstructions().remove(0);
+                        Vertex nextMove = this.getInstructions().get(0);
+                        actions.put(getMyUnitID(), Action.createPrimitiveMove(getMyUnitID(), getDirectionToMoveTo(current, nextMove)));
+                    }
+                } 
+            }
         }
-       
         
         return actions;
-        /**
-            I would suggest implementing a state machine here to calculate a path when neccessary.
-            For instance beginning with something like:
-
-            if(this.shouldReplacePlan(state))
-            {
-                // recalculate the plan
-            }
-
-            then after this, worry about how you will follow this path by submitting sepia actions
-            the trouble is that we don't want to move on from a point on the path until we reach it
-            so be sure to take that into account in your design
-
-            once you have this working I would worry about trying to detect when you kill the townhall
-            so that you implement escaping
-         */
     }
 
     /*
@@ -298,6 +291,11 @@ public class StealthAgent
         PriorityQueue<Path> openSet = new PriorityQueue<>(Comparator.comparingDouble(path -> path.getTrueCost() + path.getEstimatedPathCostToGoal()));
         HashMap<Vertex, Float> totalCost = new HashMap<>();
         HashMap<Vertex, Vertex> parents = new HashMap<>();
+        boolean isTH = true;
+        if (dst.getXCoordinate() == this.start_x && dst.getYCoordinate() == this.start_y) {
+            isTH = false;
+        }
+
 
         openSet.add(new Path(src)); // Start from the source
         totalCost.put(src, 0f);
@@ -305,10 +303,17 @@ public class StealthAgent
             Path currentPath = openSet.poll();
             Vertex currentTile = currentPath.getDestination();
 
-            // If we are 1 tile adjacent to townhall
-            if (chebyshevDistance(currentTile, dst) == 1) {
-                return currentPath;
+            // If we are 1 tile adjacent to townhall, or exactly on starting tile
+            if (isTH) {
+                if (chebyshevDistance(currentTile, dst) == 1) {
+                    return currentPath;
+                }
+            } else {
+                if (currentTile.equals(dst)) {
+                    return currentPath;
+                }
             }
+            
 
             // Expand neighbors
             for (Vertex neighbor : getNeighbors(currentTile, state, extraParams)) {
@@ -341,7 +346,7 @@ public class StealthAgent
 
 
     public boolean towardGoal(Vertex current, Vertex dest, StateView state) {
-        // If the neighbor tile we are evaluating is closer to townhall
+        // If the neighbor tile we are evaluating is closer to goal
         Vertex goal = this.goalVertex;
 
         if (euclidian_distance(current, goal) > euclidian_distance(dest, goal)) {
@@ -375,6 +380,8 @@ public class StealthAgent
             cost += (state.getYExtent()/distance);
             if (distance <= 2) {
                 cost += (state.getYExtent()/distance);
+            } else if (distance <=3 && distance > 2) {
+                cost += ((state.getYExtent()/distance)/2);
             }
         }
         return cost;
@@ -397,6 +404,7 @@ public class StealthAgent
                 Vertex currentPos = new Vertex(enemy.getXPosition(), enemy.getYPosition());
                 if (!currentPos.equals(lastKnownPosition)) {
                     this.setArchers(state);
+                    System.out.println("Replacing plan");
                     return true;
                 }
             }
