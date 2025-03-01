@@ -59,6 +59,8 @@ Accuracy quotas were used for each map based on difficulty for the A* agent. Aft
 - TwoUnit Small Maze 82% games won (82%/95% quota met)
 - FourUnit Big Maze 20% games won (20%/20% quota met)
 - Overall score: 94%
+
   **Factors Which Influenced Accuracy**
+ 
 -   Random enemy movement can lead to pinsir movements, sometimes leading to losing terminal states no matter which moves our A* agent makes
 -   Our unit is "pulled" toward the goal because of cost discounts. This means while they might side-step around enemies, they will not retreat, leading to states where our agent throws themselves into danger in favor of approaching the goal. While this made our agent far simpler and less operationally intensive, it definitely affected its accuracy.
