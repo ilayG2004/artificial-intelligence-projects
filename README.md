@@ -15,10 +15,10 @@ A* heuristic gets neighboring tiles and assigns costs based on percieved risk va
             if (cost < 1) {
                 cost = 1;
             }
-        } else {
-            cost = euclidian_distance(src, dst);
-        }
-  '''
+   } else {
+           cost = euclidian_distance(src, dst);
+   }
+   '''
   
   After goal discounts, our cost function considers the distance for each enemy unit. Cost decreases exponentially as distance from an enemey increases.
   Additional costs are added to tiles that are within 3 or 2 units of an enemy. This creates an effect where our agent "steps-around" tiles which will prove a threat in the future.
