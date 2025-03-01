@@ -10,14 +10,14 @@ A* heuristic gets neighboring tiles and assigns costs based on percieved risk va
   Our cost function discounts neighbors closer to the current object. This creates the effect of almost "pulling" the agent toward the townhall, or toward the starting tile on returning.
   
   '''
-  if (towardGoal(src, dst, state)) {
-            cost = (float) 0.5 * euclidian_distance(src, dst);
-            if (cost < 1) {
-                cost = 1;
-            }
-   } else {
-           cost = euclidian_distance(src, dst);
-   }
+   if (towardGoal(src, dst, state)) {
+             cost = (float) 0.5 * euclidian_distance(src, dst);
+             if (cost < 1) {
+                 cost = 1;
+             }
+    } else {
+            cost = euclidian_distance(src, dst);
+    }
    '''
   
   After goal discounts, our cost function considers the distance for each enemy unit. Cost decreases exponentially as distance from an enemey increases.
@@ -46,12 +46,14 @@ A* heuristic gets neighboring tiles and assigns costs based on percieved risk va
   **# Mac, Linux. Run from the cs440 directory.**
   javac -cp "./lib/*:." @pas-stealth.srcs
   java -cp "./lib/*:." edu.cwru.sepia.Main2 data/pas/stealth/[MazeName].xml
+  
   **# Windows. Run from the cs440 directory.**
   javac -cp ./lib/*;. @pas-stealth.srcs
   java -cp ./lib/*;. edu.cwru.sepia.Main2 data/pas/stealth/[MazeName].xml
   
 
 **Conclusions**
+
 Accuracy quotas were used for each map based on difficulty for the A* agent. After running 300 simulations for each maze, our accuracy was as follows.:
 - OneUnit Small Maze 95% games won (95%/100% quota met)
 - TwoUnit Small Maze 82% games won (82%/95% quota met)
