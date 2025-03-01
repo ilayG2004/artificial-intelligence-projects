@@ -1,9 +1,12 @@
-**Global Search Agent: A* Algorithm**
+**Global Search Agent: Astar Algorithm**
+
 Objective: Destroy enemy townhall and return to starting position --> enemy units subsequently perish (from grief) and simulation is won
 This AI agent uses an A* algorithm to find routes between desired coordinates on the map.
 A* heuristic gets neighboring tiles and assigns costs based on percieved risk values. The closer the tile is to an enemy position, the more it costs. This allows our agent to move intelligently without having to predict enemy moves in advance.
   **Cost Modeling**
+  
   **Things to Consider:** Movement toward objective & staying out of enemy unit range (Chebyshev distance of 2)
+  
   Our cost function discounts neighbors closer to the current object. This creates the effect of almost "pulling" the agent toward the townhall, or toward the starting tile on returning.
   '''
   if (towardGoal(src, dst, state)) {
