@@ -10,6 +10,13 @@ import edu.bu.pas.pokemon.core.Team.TeamView;
 import edu.bu.pas.pokemon.core.Move;
 import edu.bu.pas.pokemon.core.Move.MoveView;
 import edu.bu.pas.pokemon.utils.Pair;
+//Imported stat and typing enums
+import edu.bu.pas.pokemon.core.enums.Stat;
+import edu.bu.pas.pokemon.core.enums.Type;
+import edu.bu.pas.pokemon.core.DamageEquation;
+import edu.bu.pas.pokemon.core.Pokemon;
+import edu.bu.pas.pokemon.core.Pokemon.PokemonView;
+
 
 
 import java.io.InputStream;
@@ -29,13 +36,9 @@ import java.util.concurrent.TimeoutException;
 // JAVA PROJECT IMPORTS
 
 
-public class TreeTraversalAgent
-    extends Agent
-{
+public class TreeTraversalAgent extends Agent  {
 
-	private class StochasticTreeSearcher
-        extends Object
-        implements Callable<Pair<MoveView, Long> >  // so this object can be run in a background thread
+	private class StochasticTreeSearcher extends Object implements Callable<Pair<MoveView, Long> >  // so this object can be run in a background thread
 	{
 
         // TODO: feel free to add any fields here! If you do, you should probably modify the constructor
@@ -175,5 +178,97 @@ public class TreeTraversalAgent
         }
 
         return move;
+    }
+
+    public int generateUtilValue(BattleView battleView, Node current) {
+        int maxUtil = 5;
+        int minUtil = -5;
+        int currentUtil = 0;
+        boolean STAB = false;
+        PokemonView casterView = this.getMyTeamView(battleView).getActivePokemonView();
+        PokemonView enemyView = this.getOpponentTeamView(battleView).getActivePokemonView();
+        /* ATTACK, DEBUFF/BUFF, SWITCH */
+
+
+        //Get current attack category and typings. Physical or Speical? Fire or water?
+        Move.Category moveCategory = current.getMove().getCategory();
+        if (moveCategory == Move.Category.SPECIAL || moveCategory == Move.Category.PHYSICAL) {
+            Type moveType = current.getMove().getType();
+            Type[] myPokemonTypes = new Type[2];
+            myPokemonTypes[0] = casterView.getCurrentType1();
+            myPokemonTypes[1] = casterView.getCurrentType2();
+
+            //Get enemy typings
+            Type[] enemyTypes = new Type[2];
+            enemyTypes[0] = enemyView.getCurrentType1();
+            enemyTypes[1] = enemyView.getCurrentType2();
+
+            //Get enemy strengths. Is it a special defender, or a physical defender? 
+            boolean isSpecialDefender = false;
+            if (getOpponentTeamView(battleView).getActivePokemonView().getCurrentStat(Stat.DEF) < getOpponentTeamView(battleView).getActivePokemonView().getCurrentStat(Stat.SPDEF)) {
+                isSpecialDefender = true;
+            }
+
+            //1.5x damage - STAB BONUS
+            if (moveType.equals(myPokemonTypes[0]) || moveType.equals(myPokemonTypes[1])) {
+                currentUtil += 2;
+                STAB = true;
+            }
+
+            //4x damage
+            if (Type.isSuperEffective(moveType, enemyTypes[0]) && Type.isSuperEffective(moveType, enemyTypes[1])) {
+                currentUtil +=3;
+            //2x damage
+            } else if (Type.isSuperEffective(moveType, enemyTypes[0]) || Type.isSuperEffective(moveType, enemyTypes[1])){
+                currentUtil +=2;
+            //4x resistance
+            } else if (Type.isSuperEffective(enemyTypes[0], moveType) && Type.isSuperEffective(enemyTypes[1], moveType)) {
+                currentUtil -= 3;
+            //2x resistance
+            } else if (Type.isSuperEffective(enemyTypes[0], moveType) || Type.isSuperEffective(enemyTypes[1], moveType)) {
+                currentUtil -= 2;
+            //1x damage - utility value based on damage calculation predictions. Assume no crits for caution
+            } else {
+                Pokemon tempMe = Pokemon.fromView(casterView);
+                Pokemon tempEnemy = Pokemon.fromView(enemyView);
+
+                //<0.2 of enemy's current health
+                if (DamageEquation.calculateDamage(current.getMove(), 1, tempMe, tempEnemy, STAB,true,1, 1.0) < (0.2 * getOpponentTeamView(battleView).getActivePokemonView().getCurrentStat(Stat.HP))) {
+                    currentUtil -= 3;
+                //>1/3 of enemy's current health
+                } else if (DamageEquation.calculateDamage(current.getMove(), 1, tempMe, tempEnemy, STAB,true,1, 1.0) > (0.35 * getOpponentTeamView(battleView).getActivePokemonView().getCurrentStat(Stat.HP))) {
+                    currentUtil += 1;
+                //>1/2 of enemy's current health
+                } else if (DamageEquation.calculateDamage(current.getMove(), 1, tempMe, tempEnemy, STAB,true,1, 1.0) > (0.5 * getOpponentTeamView(battleView).getActivePokemonView().getCurrentStat(Stat.HP))) {
+                    currentUtil += 2;
+                }
+            }
+
+            //Are we attacking with the opponent's weaker defense stat?
+                //Possibly unneccessary but really useful when attacking Psychic types
+            if (moveCategory == Move.Category.PHYSICAL && isSpecialDefender) {
+                currentUtil += 1;
+            } else {
+                currentUtil -= 1;
+            }
+            if (moveCategory == Move.Category.SPECIAL && !(isSpecialDefender)) {
+                currentUtil += 1;
+            } else {
+                currentUtil -=1 ;
+            }
+        //STATUS EFFECT
+        } else {
+            //ILAY TODO: SET SPECIFIC UTILITY VALUES BASED ON WHAT STATUS AND WHO IT IS EFFECTING
+            currentUtil = 1;
+        }
+
+        if (currentUtil > maxUtil) {
+            currentUtil = maxUtil;
+        } else if (currentUtil < minUtil) {
+            currentUtil = minUtil;
+        }
+
+        return currentUtil;
+
     }
 }
