@@ -78,6 +78,7 @@ public class Node {
   //FOR NICK SIMA TO IMPLEMENT
   public List<Node> generateChildren(Node root) {
     //During child generation please specify which nodes are chance nodes or not. This will help with our AB pruning later
+    // Utility values generated in tree traversal. NO
     return null;
   }
 }
