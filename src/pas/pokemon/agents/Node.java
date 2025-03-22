@@ -30,7 +30,7 @@ public class Node {
   private List<Node> children;
   private int utilityValue;
   private boolean isChanceNode;
-  private edu.bu.pas.pokemon.core.Move move;
+  private edu.bu.pas.pokemon.core.Move.MoveView move;
 
   /* CONSTRUCTORS */
   //DEFAULT ROOT OF TURN: Intializes a root node with no parent and no children. 
@@ -43,7 +43,7 @@ public class Node {
   }
   //Initializes some node with an existing parent, a precalculated utility value, and whether or not it is a chance node
     // No children generated yet
-  public Node(Node parent, int utilityValue, boolean chance, edu.bu.pas.pokemon.core.Move move) {
+  public Node(Node parent, int utilityValue, boolean chance, edu.bu.pas.pokemon.core.Move.MoveView move) {
     this.parent = parent;
     this.utilityValue = utilityValue;
     this.isChanceNode = chance;
@@ -71,7 +71,7 @@ public class Node {
   }
 
   //Return move
-  public edu.bu.pas.pokemon.core.Move getMove() {
+  public edu.bu.pas.pokemon.core.Move.MoveView getMove() {
     return this.move;
   }
 
