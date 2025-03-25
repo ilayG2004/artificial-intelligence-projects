@@ -646,6 +646,8 @@ class PTC implements Node {
   public void generateChildren(Node node) {
     BattleView battlev = node.getBattle();
     TeamView ourTeam = battlev.getTeam1View();
+
+    // INPUT MOC - OUTPUT MINMAXNODES
     if (node instanceof MOC) {
       double chanceForFirst = getFirstChance(battle, ourTeam);
       ((MOC)node).setProbs(chanceForFirst);
@@ -657,6 +659,7 @@ class PTC implements Node {
       }
     }
 
+    // INPUT MINMAXNODE - OUTPUT MRCS
     else if (node instanceof MinMaxNode){
       generateMRC((MinMaxNode)node);
       for (Node nextNode : ((MinMaxNode)node).getChildren()) {
@@ -664,6 +667,7 @@ class PTC implements Node {
       }
     }
 
+    // INPUT MRCS - OUTPUT MINMAXNODES & PTCS
     else if (node instanceof MRC) {
       MinMaxNode currParent = ((MinMaxNode) node.getParent());
       if (currParent.getMinMax().equals("max")) {
@@ -680,13 +684,13 @@ class PTC implements Node {
       }
     }
 
+    // INPUT PTCS - OUTPUT MOCS
     else if (node instanceof PTC) {
       PTCtoNextTurnEnd(((PTC)node), battlev, 0);
       for (Node nextNode : ((PTC)node).getChildren()) {
         generateChildren(nextNode);
       }
     }
-
     return;
   }
 
