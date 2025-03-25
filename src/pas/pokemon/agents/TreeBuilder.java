@@ -3,6 +3,8 @@ package src.pas.pokemon.agents;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.event.SwingPropertyChangeSupport;
+
 import edu.bu.pas.pokemon.core.Battle;
 import edu.bu.pas.pokemon.core.Move;
 import edu.bu.pas.pokemon.core.Battle.BattleView;
@@ -60,6 +62,12 @@ public class TreeBuilder {
           }
         }
       }
+    }
+    if (oppFirst == 0.0) {
+      return 1.0;
+    }
+    if (usFirst == 0.0) {
+      return 0.0;
     }
     return usFirst / (usFirst + oppFirst);
   }
@@ -120,7 +128,6 @@ public class TreeBuilder {
     List<Pair<MoveView, MoveView>> leftNodeMovePairs = allMoves.getFirst();
     List<Pair<MoveView, MoveView>> rightNodeMovePairs = allMoves.getSecond();
 
-
     List<MoveView> leftMoves = new ArrayList<>();
     List<MoveView> rightMoves = new ArrayList<>();
 
@@ -158,7 +165,7 @@ public class TreeBuilder {
       newMRC.setParent(prevNode);
       newMRC.setBattle(prevNode.getBattle());
 
-      prevNode.addChild(newMRC);
+      prevNode.addMRC(newMRC);
       results.add(newMRC);
     }
 
@@ -179,32 +186,38 @@ public class TreeBuilder {
 
    MoveView[] ourMoves = ourPoke.getMoveViews();
    MoveView[] oppMoves = oppPoke.getMoveViews();
-
   for (int i = 0; i < ourMoves.length; i++) {
+    for (int j = 0; j < oppMoves.length; j++) {
+        if (ourMoves[i] == null || oppMoves[j] == null) {
+            //Skip invalid move combo
+            continue;
+        }
+      MoveView ourMove = ourMoves[i];
+      MoveView oppMove = oppMoves[j];
    // get our current moves
-   MoveView ourMove = ourMoves[i];
-   MoveView oppMove = oppMoves[i];
 
-   Pair<MoveView, MoveView> movePair = new Pair(ourMove, oppMove);
-   if (ourMove.getPriority() > oppMove.getPriority()) {
-     usFirst.add(movePair);
-   }
-   else if (ourMove.getPriority() < oppMove.getPriority()) {
-     oppFirst.add(movePair);
-   }
-   else {
-     if (ourPoke.getCurrentStat(Stat.SPD) > oppPoke.getCurrentStat(Stat.SPD)) {
-       usFirst.add(movePair);
-     }
-     else if (ourPoke.getCurrentStat(Stat.SPD) < oppPoke.getCurrentStat(Stat.SPD)) {
-       oppFirst.add(movePair);
-     }
-     else {
-       usFirst.add(movePair);
-       oppFirst.add(movePair);
-     }
-   }
-  }
+
+      Pair<MoveView, MoveView> movePair = new Pair(ourMove, oppMove);
+      if (ourMove.getPriority() > oppMove.getPriority()) {
+        usFirst.add(movePair);
+      }
+      else if (ourMove.getPriority() < oppMove.getPriority()) {
+        oppFirst.add(movePair);
+      }
+      else {
+        if (ourPoke.getCurrentStat(Stat.SPD) > oppPoke.getCurrentStat(Stat.SPD)) {
+          usFirst.add(movePair);
+        }
+        else if (ourPoke.getCurrentStat(Stat.SPD) < oppPoke.getCurrentStat(Stat.SPD)) {
+          oppFirst.add(movePair);
+        }
+        else {
+          usFirst.add(movePair);
+          oppFirst.add(movePair);
+        }
+      }
+      }
+    }
   List<MoveView> result = new ArrayList<>();
   for (Pair<MoveView, MoveView> pair : usFirst) {
     if (!result.contains(pair.getSecond())){ 
@@ -216,7 +229,6 @@ public class TreeBuilder {
 
   public List<MoveView> usSecondMoves(BattleView battlev) {
     // our results to be included in a pair and returned
-    List<Pair<MoveView, MoveView>> usFirst = new ArrayList<>();
     List<Pair<MoveView, MoveView>> oppFirst = new ArrayList<>();
     
     TeamView ourTeam = battlev.getTeam1View();
@@ -228,28 +240,40 @@ public class TreeBuilder {
     MoveView[] ourMoves = ourPoke.getMoveViews();
     MoveView[] oppMoves = oppPoke.getMoveViews();
 
+  //No scenario where we go second. Just return their moves
+  if (ourMoves.length == 0 && oppMoves.length != 0) {
+    List<MoveView> result = new ArrayList<>();
+    for (MoveView oppmove : oppMoves) {
+      result.add(oppmove);
+    }
+    return result;
+  }
+  //No scenario opponent goes second. Just return our moves
+  if (ourMoves.length != 0 && oppMoves.length == 0) {
+    List<MoveView> result = new ArrayList<>();
+    for (MoveView ourMove : ourMoves) {
+      result.add(ourMove);
+    }
+    return result;
+  }
   for (int i = 0; i < ourMoves.length; i++) {
-    // get our current moves
-    MoveView ourMove = ourMoves[i];
-    MoveView oppMove = oppMoves[i];
-
-    Pair<MoveView, MoveView> movePair = new Pair(ourMove, oppMove);
-    if (ourMove.getPriority() > oppMove.getPriority()) {
-      usFirst.add(movePair);
-    }
-    else if (ourMove.getPriority() < oppMove.getPriority()) {
-      oppFirst.add(movePair);
-    }
-    else {
-      if (ourPoke.getCurrentStat(Stat.SPD) > oppPoke.getCurrentStat(Stat.SPD)) {
-        usFirst.add(movePair);
+    for (int j = 0; j < oppMoves.length; j++) {
+      if (ourMoves[i] == null || oppMoves[j] == null) {
+        //Skip invalid move combo
+        continue;
       }
-      else if (ourPoke.getCurrentStat(Stat.SPD) < oppPoke.getCurrentStat(Stat.SPD)) {
+      // get our current moves
+      MoveView ourMove = ourMoves[i];
+      MoveView oppMove = oppMoves[j];
+
+      Pair<MoveView, MoveView> movePair = new Pair(ourMove, oppMove);
+      if (ourMove.getPriority() < oppMove.getPriority()) {
         oppFirst.add(movePair);
       }
       else {
-        usFirst.add(movePair);
-        oppFirst.add(movePair);
+        if (ourPoke.getCurrentStat(Stat.SPD) <= oppPoke.getCurrentStat(Stat.SPD)) {
+          oppFirst.add(movePair);
+        }
       }
     }
   }
@@ -276,12 +300,16 @@ public class TreeBuilder {
     else {
       potentialFirstOutcomes = prevNode.getMove().getPotentialEffects(battle, 1, 0);
     }
+    System.out.println("GENNING MRCS: " + prevNode.toString());
+    System.out.println("# of potential outcomes: " + potentialFirstOutcomes.size());
 
     for (Pair<Double, BattleView> pair : potentialFirstOutcomes) {
       BattleView outcome = pair.getSecond();
       // we have gone first
       if (currTeam == 0) {
-        if(outcome.getTeam2View().getActivePokemonView().hasFainted()) {
+        Node nodeParent = prevNode.getParent();
+        MinMaxNode currParent = ((MinMaxNode)nodeParent);
+        if(outcome.getTeam2View().getActivePokemonView().hasFainted() || currParent.getSecond()) {
           PTC nextNode = new PTC(prevNode, outcome);
           results.add(nextNode);
           prevNode.addChild(nextNode);
@@ -290,6 +318,7 @@ public class TreeBuilder {
           // get a list of moves our opponent is now making according to previous MOC, append as moves
           List<MoveView> oppMoves = oppSecondMoves(battle);
           MinMaxNode nextNode = new MinMaxNode("min", outcome, oppMoves, prevNode);
+          nextNode.setSecond();
           results.add(nextNode);
           prevNode.addChild(nextNode);
         }
@@ -297,7 +326,9 @@ public class TreeBuilder {
 
       // opponent has gone first
       else { 
-        if(outcome.getTeam1View().getActivePokemonView().hasFainted()) {
+        Node nodeParent = prevNode.getParent();
+        MinMaxNode currParent = ((MinMaxNode)nodeParent);
+        if(outcome.getTeam1View().getActivePokemonView().hasFainted() || currParent.getSecond()) {
           PTC nextNode = new PTC(prevNode, outcome);
           results.add(nextNode);
           prevNode.addChild(nextNode);
@@ -306,6 +337,7 @@ public class TreeBuilder {
           // get all the list of moves which resulted in us going second
           List<MoveView> usMoves = usSecondMoves(battle);
           MinMaxNode nextNode = new MinMaxNode("max", outcome, usMoves, prevNode);
+          nextNode.setSecond();
           results.add(nextNode);
           prevNode.addChild(nextNode);
         }
@@ -330,6 +362,7 @@ public class TreeBuilder {
           double chanceForFirst = getFirstChance(outcome, ourTeam);
           MOC nextTurn = new MOC(prevNode);
           nextTurn.setProbs(chanceForFirst);
+          nextTurn.setBattle(outcome);
           results.add(nextTurn);
           prevNode.addChild(nextTurn);
         }
@@ -341,11 +374,16 @@ public class TreeBuilder {
     }
   }
 
+  public void completeMinMaxNode(MinMaxNode node) {
+    
+  }
+
   public Node generateChildrenWrapper(BattleView battlev) {
     // initialize our first MOC, call generateChildren on it and return,
     // generateChildren handles recursive calls
     MOC root = new MOC();
     root.setBattle(battlev);
+    generateChildren(root);
     return root;
   }
 
@@ -353,6 +391,9 @@ public class TreeBuilder {
   public void generateChildren(Node node) {
     System.out.println(node.toString());
     BattleView battlev = node.getBattle();
+    if (battlev == null) {
+      System.out.println("null");
+    }
     TeamView ourTeam = battlev.getTeam1View();
 
     // INPUT MOC - OUTPUT MINMAXNODES
@@ -362,16 +403,20 @@ public class TreeBuilder {
 
       // populates the MOC's children field with two MinMaxNodes
       MOCtoDeterminstic((MOC)node, battlev);
-      for (Node nextNode : ((MOC)node).getChildren()) {
-        generateChildren((MinMaxNode)(nextNode));
+      if (((MOC)node).getChildren().size() != 0) {
+        for (Node nextNode : ((MOC)node).getChildren()) {
+          generateChildren((MinMaxNode)(nextNode));
+        }
       }
     }
 
     // INPUT MINMAXNODE - OUTPUT MRCS
     else if (node instanceof MinMaxNode){
       generateMRC((MinMaxNode)node);
-      for (Node nextNode : ((MinMaxNode)node).getChildren()) {
-        generateChildren((MRC)nextNode);
+      if (((MinMaxNode)node).getMRCS() != null) {
+        for (Node nextNode : ((MinMaxNode)node).getMRCS()) {
+          generateChildren((MRC)nextNode);
+        }
       }
     }
 

@@ -41,23 +41,21 @@ public interface Node {
 }
 
 class MOC implements Node {
-  private Double left_prob;
-  private Double right_prob;
+  private Double left_prob = 0.0;
+  private Double right_prob = 0.0;
   private boolean isChance = true;
   private int utility;
-  private List<Node> children;
+  private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
 
   public MOC() {
       this.utility = 0;
-      this.children = new ArrayList<>();
       this.parent = null;
   }
 
   public MOC(Node parent) {
     this.utility = 0;
-    this.children = new ArrayList<>();
     this.parent = parent;
   }
   @Override
@@ -115,7 +113,7 @@ class MOC implements Node {
 
   @Override
   public String toString() {
-      return "MOC Node [Left Prob: " + left_prob + ", Right Prob: " + right_prob + "]";
+      return "MOC Node [Left Prob: " + this.left_prob + ", Right Prob: " + this.right_prob + "]";
   }
 }
 
@@ -123,7 +121,7 @@ class MRC implements Node {
   private edu.bu.pas.pokemon.core.Move.MoveView move;
   private boolean isChance = true;
   private int utility;
-  private List<Node> children;
+  private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
 
@@ -181,8 +179,9 @@ class MRC implements Node {
 class MinMaxNode implements Node {
   private String minmax;
   private boolean isChance = false;
+  private boolean isSecond = false;
   private int utility;
-  private List<Node> children;
+  private List<MRC> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
   private List<edu.bu.pas.pokemon.core.Move.MoveView> possibleMoves;
@@ -193,10 +192,35 @@ class MinMaxNode implements Node {
       this.battle = battle;
   }
 
-
+  // DUMMY FUNCTION
   @Override
   public void addChild(Node child) {
-      this.children.add(child);
+    this.children.add(((MRC)child));
+  }
+
+  // DUMMY FUNCTION
+  @Override
+  public List<Node> getChildren() {
+    List<Node> lst = new ArrayList<>();
+    return lst;
+  }
+
+  // REAL ADDCHILD FUNCTION
+  public void addMRC(MRC child) {
+    this.children.add(child);
+  }
+
+  // REAL GETCHILDREN FUNCTION
+  public List<MRC> getMRCS() {
+    return this.children;
+  }
+
+  public void setSecond() {
+    this.isSecond = true;
+  }
+
+  public boolean getSecond() {
+    return this.isSecond;
   }
 
   @Override
@@ -217,11 +241,6 @@ class MinMaxNode implements Node {
   @Override
   public void setParent(Node parent) {
       this.parent = parent;
-  }
-
-  @Override
-  public List<Node> getChildren() {
-      return this.children;
   }
 
   public String getMinMax() {
@@ -252,19 +271,17 @@ class MinMaxNode implements Node {
 class PTC implements Node {
   private boolean isChance = true;
   private int utility;
-  private List<Node> children;
+  private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
   private boolean isTerminal;
 
   public PTC() {
       this.utility = 0;
-      this.children = new ArrayList<>();
       this.parent = null;
   }
   public PTC(Node parent, Battle.BattleView battle) {
     this.utility = 0;
-    this.children = new ArrayList<>();
     this.parent = parent;
     this.battle = battle;
     Team temp_team_me = new Team(battle.getTeam1View());

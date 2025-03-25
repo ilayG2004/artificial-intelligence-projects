@@ -198,7 +198,7 @@ public class TreeTraversalAgent extends Agent  {
         }
     
         rootNode = (MOC) treeBuilder.generateChildrenWrapper(battleView);
-        treeBuilder.generateChildren(rootNode);
+        
     
         System.out.println("Tree generation complete.");
     }
