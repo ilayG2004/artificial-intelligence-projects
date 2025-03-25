@@ -42,6 +42,8 @@ public interface Node {
   Node getParent();
   void setParent(Node parent);
   List<Node> getChildren();
+  void setBattle(BattleView battle);
+  BattleView getBattle();
 }
 
 class MOC implements Node {
@@ -105,6 +107,16 @@ class MOC implements Node {
   @Override
   public List<Node> getChildren() {
       return this.children;
+  }
+
+  @Override
+  public void setBattle(BattleView battle) {
+    this.battle = battle;
+  }
+
+  @Override
+  public BattleView getBattle() {
+    return this.battle;
   }
 }
 
@@ -294,6 +306,16 @@ class PTC implements Node {
       return this.children;
   }
 
+  @Override 
+  public void setBattle(BattleView battle) {
+    this.battle = battle;
+  }
+  
+  @Override 
+  public BattleView getBattle() {
+    return this.battle;
+  }
+
   public double getFirstChance(BattleView battlev, TeamView teamv) {
     // gets the chance we go first given current PokeMon
     PokemonView ourActive = teamv.getActivePokemonView();
@@ -414,6 +436,9 @@ class PTC implements Node {
     List<MinMaxNode> res = new ArrayList<>();
     res.add(rightNode);
     res.add(leftNode);
+
+    prevNode.addChild(rightNode);
+    prevNode.addChild(leftNode);
     return res;
   }
 
@@ -552,12 +577,14 @@ class PTC implements Node {
         if(outcome.getTeam2View().getActivePokemonView().hasFainted()) {
           PTC nextNode = new PTC(prevNode, outcome);
           results.add(nextNode);
+          prevNode.addChild(nextNode);
         }
         else {
           // get a list of moves our opponent is now making according to previous MOC, append as moves
           List<MoveView> oppMoves = oppSecondMoves(battle);
           MinMaxNode nextNode = new MinMaxNode("min", outcome, oppMoves, prevNode);
           results.add(nextNode);
+          prevNode.addChild(nextNode);
         }
       }
 
@@ -566,12 +593,14 @@ class PTC implements Node {
         if(outcome.getTeam1View().getActivePokemonView().hasFainted()) {
           PTC nextNode = new PTC(prevNode, outcome);
           results.add(nextNode);
+          prevNode.addChild(nextNode);
         }
         else {
           // get all the list of moves which resulted in us going second
           List<MoveView> usMoves = usSecondMoves(battle);
           MinMaxNode nextNode = new MinMaxNode("max", outcome, usMoves, prevNode);
           results.add(nextNode);
+          prevNode.addChild(nextNode);
         }
       }
     }
@@ -595,6 +624,7 @@ class PTC implements Node {
           MOC nextTurn = new MOC(prevNode);
           nextTurn.setProbs(chanceForFirst);
           results.add(nextTurn);
+          prevNode.addChild(nextTurn);
         }
       }
       return results;
@@ -604,6 +634,72 @@ class PTC implements Node {
     }
   }
 
+  public Node generateChildrenWrapper(BattleView battlev) {
+    // initialize our first MOC, call generateChildren on it and return,
+    // generateChildren handles recursive calls
+    MOC root = new MOC();
+    root.setBattle(battlev);
+    return root;
+  }
+
+
+  public void generateChildren(Node node) {
+    BattleView battlev = node.getBattle();
+    TeamView ourTeam = battlev.getTeam1View();
+    if (node instanceof MOC) {
+      double chanceForFirst = getFirstChance(battle, ourTeam);
+      ((MOC)node).setProbs(chanceForFirst);
+
+      // populates the MOC's children field with two MinMaxNodes
+      MOCtoDeterminstic((MOC)node, battlev);
+      for (Node nextNode : ((MOC)node).getChildren()) {
+        generateChildren((MinMaxNode)(nextNode));
+      }
+    }
+
+    else if (node instanceof MinMaxNode){
+      generateMRC((MinMaxNode)node);
+      for (Node nextNode : ((MinMaxNode)node).getChildren()) {
+        generateChildren((MRC)nextNode);
+      }
+    }
+
+    else if (node instanceof MRC) {
+      MinMaxNode currParent = ((MinMaxNode) node.getParent());
+      if (currParent.getMinMax().equals("max")) {
+        checkOrGenMRC(((MRC)node), 0);
+        for (Node nextNode : ((MRC)node).getChildren()) {
+          generateChildren(nextNode);
+        }
+      }
+      else {
+        checkOrGenMRC(((MRC)node), 1);
+        for (Node nextNode : ((MRC)node).getChildren()) {
+          generateChildren(nextNode);
+        }
+      }
+    }
+
+    else if (node instanceof PTC) {
+      PTCtoNextTurnEnd(((PTC)node), battlev, 0);
+      for (Node nextNode : ((PTC)node).getChildren()) {
+        generateChildren(nextNode);
+      }
+    }
+
+    return;
+  }
+
+
+
+
+
+
+
+
+
+
+  /* 
   public Node generateChildren(BattleView battlev) {
     TeamView ourTeam = battlev.getTeam1View();
     TeamView oppTeam = battlev.getTeam2View();
@@ -645,4 +741,5 @@ class PTC implements Node {
 
     return root;
   }
+  */
 }
