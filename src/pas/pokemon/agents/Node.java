@@ -31,8 +31,8 @@ import java.util.concurrent.TimeoutException;
 
 public interface Node {
   void addChild(Node child);
-  int getUtility();
-  void setUtility(int util);
+  double getUtility();
+  void setUtility(double util);
   Node getParent();
   void setParent(Node parent);
   List<Node> getChildren();
@@ -44,7 +44,7 @@ class MOC implements Node {
   private Double left_prob = 0.0;
   private Double right_prob = 0.0;
   private boolean isChance = true;
-  private int utility;
+  private double utility;
   private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
@@ -77,12 +77,12 @@ class MOC implements Node {
   }
 
   @Override
-  public int getUtility() {
+  public double getUtility() {
       return this.utility;
   }
 
   @Override
-  public void setUtility(int util) {
+  public void setUtility(double util) {
       this.utility = util;
   }
 
@@ -120,7 +120,7 @@ class MOC implements Node {
 class MRC implements Node {
   private edu.bu.pas.pokemon.core.Move.MoveView move;
   private boolean isChance = true;
-  private int utility;
+  private double utility;
   private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
@@ -135,12 +135,12 @@ class MRC implements Node {
   }
 
   @Override
-  public int getUtility() {
+  public double getUtility() {
       return this.utility;
   }
 
   @Override
-  public void setUtility(int util) {
+  public void setUtility(double util) {
       this.utility = util;
   }
 
@@ -180,12 +180,13 @@ class MinMaxNode implements Node {
   private String minmax;
   private boolean isChance = false;
   private boolean isSecond = false;
-  private int utility;
+  private double utility;
   private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
   private List<edu.bu.pas.pokemon.core.Move.MoveView> possibleMoves;
   private HashMap<MoveView, List<Pair<Double, BattleView>>> outcomes;
+  private List<Double> moveUtils = new ArrayList<>();
 
 
   public MinMaxNode(String minmax, BattleView battle, List<MoveView> moves, Node root) {
@@ -235,12 +236,12 @@ class MinMaxNode implements Node {
   }
 
   @Override
-  public int getUtility() {
+  public double getUtility() {
       return this.utility;
   }
 
   @Override
-  public void setUtility(int util) {
+  public void setUtility(double util) {
       this.utility = util;
   }
 
@@ -277,11 +278,15 @@ class MinMaxNode implements Node {
   public String toString() {
       return "MinMaxNode [" + minmax + "] with moves: " + possibleMoves;
   }
+
+  public void addMoveExpectedUtil(double i) {
+    this.moveUtils.add(i);
+  }
 }
 
 class PTC implements Node {
   private boolean isChance = true;
-  private int utility;
+  private double utility;
   private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
@@ -317,12 +322,12 @@ class PTC implements Node {
   }
 
   @Override
-  public int getUtility() {
+  public double getUtility() {
       return this.utility;
   }
 
   @Override
-  public void setUtility(int util) {
+  public void setUtility(double util) {
       this.utility = util;
   }
 
