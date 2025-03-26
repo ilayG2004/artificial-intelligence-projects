@@ -14,6 +14,7 @@ import edu.bu.pas.pokemon.core.Team;
 import edu.bu.pas.pokemon.core.Team.TeamView;
 import edu.bu.pas.pokemon.core.enums.Stat;
 import edu.bu.pas.pokemon.utils.Pair;
+import java.util.HashMap;
 
 public class TreeBuilder {
   
@@ -156,6 +157,7 @@ public class TreeBuilder {
     return res;
   }
 
+  /* 
   public List<MRC> generateMRC(MinMaxNode prevNode) {
     List<MRC> results = new ArrayList<>();
 
@@ -172,6 +174,7 @@ public class TreeBuilder {
     return results;
     // all MRCs lead to either determinstic nodes, or PTCs
   }
+  */
 
   public List<MoveView> oppSecondMoves(BattleView battlev) {
    // our results to be included in a pair and returned
@@ -374,8 +377,77 @@ public class TreeBuilder {
     }
   }
 
-  public void completeMinMaxNode(MinMaxNode node) {
+  public void completeMinMaxNode(MinMaxNode prevNode, int currTeam) {
+    BattleView battle = prevNode.getBattle();
+    List<Node> results = new ArrayList<>();
+    HashMap<MoveView, List<Pair<Double, BattleView>>> dict = new HashMap<>();
+    HashMap<MoveView, List<Pair<Double, BattleView>>> otherDict = new HashMap<>();
+    TeamView ourTeam = battle.getTeam1View();
+    TeamView oppTeam = battle.getTeam2View();
     
+    Team temp_team_me = new Team(battle.getTeam1View());
+    Team temp_team_opp = new Team(battle.getTeam2View());
+
+    //Terminal state?
+    if (temp_team_me.getNumAlivePokemon() == 0) {
+      System.out.println("Terminal node. ENEMY WINS");
+    } else if (temp_team_opp.getNumAlivePokemon() == 0) {
+      System.out.println("Terminal node. WE WIN");
+    
+    //Not terminal state. Our team goes first
+    } else if (currTeam == 0) {
+      List<MoveView> moves = ourTeam.getActivePokemonView().getAvailableMoves();
+      for (MoveView move : moves) {
+        if (move != null) {
+          List<Pair<Double, BattleView>> outcomes = move.getPotentialEffects(battle, 0, 1);
+          dict.put(move, outcomes);
+          List<MoveView> otherPlrMoves = oppSecondMoves(battle);
+          
+          for (Pair<Double, BattleView> p1PairOutcome : outcomes) {
+            BattleView p1Outcome = p1PairOutcome.getSecond();
+            for (MoveView otherPlrMove : otherPlrMoves) {
+              List<Pair<Double, BattleView>> otherPlrOutcomes = otherPlrMove.getPotentialEffects(p1Outcome, 1, 0);
+              otherDict.put(move, otherPlrOutcomes);
+              //Create min node with outcome from previous node's attack. Whose parent is the max node
+              MinMaxNode otherPlayerMove = new MinMaxNode("min", p1Outcome, otherPlrMoves, prevNode);
+              otherPlayerMove.setOutcomes(otherDict);
+              prevNode.addKid(otherPlayerMove);
+            }
+            
+          }
+        } else {
+          continue;
+        }
+      }
+      prevNode.setOutcomes(dict);
+
+    //Not terminal state. Enemy team goes first.
+    } else {
+      List<MoveView> moves = oppTeam.getActivePokemonView().getAvailableMoves();
+      for (MoveView move : moves) {
+        if (move != null) {
+          List<Pair<Double, BattleView>> outcomes = move.getPotentialEffects(battle, 1, 0);
+          dict.put(move, outcomes);
+
+          List<MoveView> otherPlrMoves = usSecondMoves(battle);
+          for (Pair<Double, BattleView> p1PairOutcome : outcomes) {
+            BattleView p1Outcome = p1PairOutcome.getSecond();
+            for (MoveView otherPlrMove : otherPlrMoves) {
+              List<Pair<Double, BattleView>> otherPlrOutcomes = otherPlrMove.getPotentialEffects(p1Outcome, 0, 1);
+              otherDict.put(move, otherPlrOutcomes);
+
+              //Create max node with outcome from previous node's attack. Whose parent is the max node
+              MinMaxNode otherPlayerMove = new MinMaxNode("max", p1Outcome, otherPlrMoves, prevNode);
+              otherPlayerMove.setOutcomes(otherDict);
+              prevNode.addKid(otherPlayerMove);
+            }
+          }
+        } else {
+          continue;
+        }
+        prevNode.setOutcomes(dict);
+      }
+    }
   }
 
   public Node generateChildrenWrapper(BattleView battlev) {
@@ -410,7 +482,22 @@ public class TreeBuilder {
       }
     }
 
+    // INPUT MINMAXNODE - OUTPUT MINMAXNODES MOCS
+    if (node instanceof MinMaxNode) {
+      if (((MinMaxNode)node).getMinMax().equals("max")) {
+        completeMinMaxNode(((MinMaxNode)node), 0);
+        if (!((MinMaxNode)node).getKids().isEmpty()) {
+          for (Node nextNode : ((MinMaxNode)node).getKids()) {
+            generateChildren(nextNode);
+          }
+        }
+      }
+    }
+
+
+    
     // INPUT MINMAXNODE - OUTPUT MRCS
+    /*
     else if (node instanceof MinMaxNode){
       generateMRC((MinMaxNode)node);
       if (((MinMaxNode)node).getMRCS() != null) {
@@ -444,6 +531,7 @@ public class TreeBuilder {
         generateChildren(nextNode);
       }
     }
+    */
     return;
   }
 }

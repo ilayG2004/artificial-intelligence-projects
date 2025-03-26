@@ -181,15 +181,18 @@ class MinMaxNode implements Node {
   private boolean isChance = false;
   private boolean isSecond = false;
   private int utility;
-  private List<MRC> children = new ArrayList<>();
+  private List<Node> children = new ArrayList<>();
   private Node parent;
   private edu.bu.pas.pokemon.core.Battle.BattleView battle;
   private List<edu.bu.pas.pokemon.core.Move.MoveView> possibleMoves;
+  private HashMap<MoveView, List<Pair<Double, BattleView>>> outcomes;
+
 
   public MinMaxNode(String minmax, BattleView battle, List<MoveView> moves, Node root) {
       this.minmax = minmax;
       this.possibleMoves = moves;
       this.battle = battle;
+      this.parent = root;
   }
 
   // DUMMY FUNCTION
@@ -205,13 +208,21 @@ class MinMaxNode implements Node {
     return lst;
   }
 
+  public void setOutcomes(HashMap<MoveView, List<Pair<Double, BattleView>>> lst) {
+    this.outcomes = lst;
+  }
+
+  public HashMap<MoveView, List<Pair<Double, BattleView>>> getOutcomes() {
+    return this.outcomes;
+  }
+
   // REAL ADDCHILD FUNCTION
-  public void addMRC(MRC child) {
+  public void addKid(Node child) {
     this.children.add(child);
   }
 
   // REAL GETCHILDREN FUNCTION
-  public List<MRC> getMRCS() {
+  public List<Node> getKids() {
     return this.children;
   }
 
