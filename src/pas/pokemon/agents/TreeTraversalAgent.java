@@ -38,7 +38,6 @@ import java.util.concurrent.TimeoutException;
 
 
 public class TreeTraversalAgent extends Agent  {
-    private TreeBuilder treeBuilder;
     private Node rootNode;
 	private class StochasticTreeSearcher extends Object implements Callable<Pair<MoveView, Long> >  // so this object can be run in a background thread
 	{
@@ -74,8 +73,46 @@ public class TreeTraversalAgent extends Agent  {
 		 * @param node the node to perform the search on (i.e. the root of the entire tree)
 		 * @return The MoveView that your agent should execute
 		 */
-        public MoveView stochasticTreeSearch(BattleView rootView) //, int depth)
+        public boolean isTerminalState(BattleView battle) {
+            Team temp_team_me = new Team(battle.getTeam1View());
+            Team temp_team_opp = new Team(battle.getTeam2View());
+            //Terminal state?
+            if (temp_team_me.getNumAlivePokemon() == 0) {
+                //Enemy wins
+                //((MinMaxNode)node).setUtility(-6);
+                return true;
+            } else if (temp_team_opp.getNumAlivePokemon() == 0) {
+                //We win
+                //((MinMaxNode)node).setUtility(6);
+                return true;
+            } else {
+                return false;
+            }
+        }
+        public MoveView stochasticTreeSearch( BattleView rootView) //, int depth)
         {
+            /*
+            Node bestChild = null;
+            
+            //BASE CASE: TERMINAL NODE
+            if (isTerminalState(rootView)) {
+                return ((MinMaxNode)root).getParent().get(Move);
+            }
+        
+            if (root instanceof MinMaxNode) {
+                //Max node
+                if (((MinMaxNode)root).getMinMax().equals("max")) {
+                    double alpha = Double.POSITIVE_INFINITY;
+                    List<Node> children = ((MinMaxNode)root).getKids();
+                    for (Node child : children) {
+                        alpha = Math.min(alpha, stochastic)
+                    }
+                //Min node
+                } else {
+
+                }
+            }
+                 */
             return null;
         }
 
@@ -100,7 +137,6 @@ public class TreeTraversalAgent extends Agent  {
         super();
         this.maxThinkingTimePerMoveInMS = 180000 * 2; // 6 min/move
         this.maxDepth = 1000; // set this however you want
-        this.treeBuilder = new TreeBuilder();
     }
 
     /**
@@ -116,10 +152,24 @@ public class TreeTraversalAgent extends Agent  {
         // It is likely a good idea to expand a bunch of trees with different choices as the active pokemon on your
         // team, and see which pokemon is your best choice by comparing the values of the root nodes.
 
+
         for(int idx = 0; idx < this.getMyTeamView(view).size(); ++idx)
         {
             if(!this.getMyTeamView(view).getPokemonView(idx).hasFainted())
             {
+                //Is this living pokemon resistant to the enemy?
+                if (this.getMyTeamView(view).getPokemonView(idx).getCurrentType1().isSuperEffective(this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2()) || 
+                this.getMyTeamView(view).getPokemonView(idx).getCurrentType2().isSuperEffective(this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
+                    return idx;
+                }
+            }
+        }
+        //Otherwise just pick the first not dead pokemon
+        for(int idx = 0; idx < this.getMyTeamView(view).size(); ++idx)
+        {
+            if(!this.getMyTeamView(view).getPokemonView(idx).hasFainted())
+            {
+                //Is this living pokemon resistant to the enemy?
                 return idx;
             }
         }
@@ -134,7 +184,6 @@ public class TreeTraversalAgent extends Agent  {
     @Override
     public MoveView getMove(BattleView battleView)
     {
-        generateTree(battleView);
 
         // will run the minimax algorithm in a background thread with a timeout
         ExecutorService backgroundThreadManager = Executors.newSingleThreadExecutor();
@@ -185,39 +234,11 @@ public class TreeTraversalAgent extends Agent  {
 
         return move;
     }
-    public void generateTree(BattleView battleView) {
-        System.out.println("Generating decision tree...");
     
-        if (battleView == null) {
-            throw new NullPointerException("Error in generateTree: BattleView is null.");
-        }
-    
-        TeamView ourTeam = battleView.getTeam1View();
-        if (ourTeam == null) {
-            throw new NullPointerException("Error in generateTree: Our TeamView is null.");
-        }
-    
-        rootNode = (MOC) treeBuilder.generateChildrenWrapper(battleView);
-        
-    
-        System.out.println("Tree generation complete.");
-    }
-    
-    public void printTree(Node node, int depth) {
-        if (node == null) return;
-    
-        // Indentation for readability
-        System.out.println(String.format("%" + (depth * 2) + "s", "") + node.toString());
-    
-        for (Node child : node.getChildren()) {
-            printTree(child, depth + 1);
-        }
-    }
 
     public int utilFunction(MoveView move, BattleView battle, BattleView projecBattleView, PokemonView casterView, PokemonView enemyView) {
         int lowerbound = -6;
         int upperbound = 6;
-        boolean STAB = false;
         int currentUtil = 0;
         Move.Category moveCategory = move.getCategory();
         boolean isSpecialDefender = false;
@@ -236,11 +257,14 @@ public class TreeTraversalAgent extends Agent  {
             enemyTypes[0] = enemyView.getCurrentType1();
             enemyTypes[1] = enemyView.getCurrentType2();
 
+            //OKO - JUST RETURN 6
+            if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) <= 0) {
+                return 6;
+            }
 
             //1.5x damage - STAB BONUS
             if (moveType.equals(myPokemonTypes[0]) || moveType.equals(myPokemonTypes[1])) {
                 currentUtil += 2;
-                STAB = true;
             }
 
             //4x damage
@@ -255,123 +279,122 @@ public class TreeTraversalAgent extends Agent  {
             //2x resistance
             } else if (Type.isSuperEffective(enemyTypes[0], moveType) || Type.isSuperEffective(enemyTypes[1], moveType)) {
                 currentUtil -= 2;
-            //1x damage - utility value based on damage calculation predictions. Assume no crits for caution
-            } else {
-                if (getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP) != getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
-                    //<0.2 of enemy's current health
-                    if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) >= 0.8 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
-                        currentUtil -= 3;
-                    //>1/3 of enemy's current health
-                    } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) <= 0.77 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP) && getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) >= 0.5 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
-                        currentUtil += 1;
-                        //>1/2 of enemy's current health
-                    } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) <= 0.5 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
-                            currentUtil += 2;
-                    }
-                } else {
-                    //Miss. Health is ezactly the same
-                    currentUtil = -5;
+            }
+            //EVALUTE OVERALL DAMAGE
+            //Did we miss?
+            if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) != getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
+                //<0.2 of enemy's current health
+                if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) >= 0.8 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
+                    currentUtil -= 3;
+                //>1/3 of enemy's current health
+                } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) <= 0.77 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP) && getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) >= 0.5 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
+                    currentUtil += 1;
+                    //>1/2 of enemy's current health
+                } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.HP) <= 0.5 * getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.HP)) {
+                        currentUtil += 2;
                 }
+            } else {
+                //Miss. Health is exactly the same
+                currentUtil = -5;
             }
                 //Are we attacking with the opponent's weaker defense stat?
                 //Possibly unneccessary but really useful when attacking Psychic types
-                if (moveCategory == Move.Category.PHYSICAL && isSpecialDefender) {
-                    currentUtil += 1;
-                } else {
-                    currentUtil -= 1;
-                }
-                if (moveCategory == Move.Category.SPECIAL && !(isSpecialDefender)) {
-                    currentUtil += 1;
-                } else {
-                    currentUtil -=1 ;
-                }
-            //STATUS EFFECT
+            if (moveCategory == Move.Category.PHYSICAL && isSpecialDefender) {
+                currentUtil += 1;
             } else {
-                //ILAY TODO: SET SPECIFIC UTILITY VALUES BASED ON WHAT STATUS AND WHO IT IS EFFECTING
+                currentUtil -= 1;
+            }
+            if (moveCategory == Move.Category.SPECIAL && !(isSpecialDefender)) {
+                currentUtil += 1;
+            } else {
+                currentUtil -=1 ;
+            }
+        //STATUS EFFECT
+        } else {
+            //ILAY TODO: SET SPECIFIC UTILITY VALUES BASED ON WHAT STATUS AND WHO IT IS EFFECTING
 
-                //NOTE: This function DOES NOT ACCOUNT FOR PROBABILITY OF OUR STATUS ATTACK MOVE FAILING
-                    //GEN 1 POKEMON -- ACCURACY IS THE BEST THING TO LOWER AGAINST OPPONENTS
-                if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ACC) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ACC)) {
-                    currentUtil += 3;
-                }
-                
-                // 2. Useful to decrease attack or special defense
-                if (isSpecialDefender) {
-                    if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
-                        currentUtil += 2;
-                    } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
-                        currentUtil += 1;
-                    }
-                } else {
-                    if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
-                        currentUtil += 1;
-                    } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
-                        currentUtil += 2;
-                    }
-                }
-                    // 3. Speed also useful to decrease
-                if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD)) {
+            //NOTE: This function DOES NOT ACCOUNT FOR PROBABILITY OF OUR STATUS ATTACK MOVE FAILING
+                //GEN 1 POKEMON -- ACCURACY IS THE BEST THING TO LOWER AGAINST OPPONENTS
+            if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ACC) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ACC)) {
+                currentUtil += 3;
+            }
+            
+            // 2. Useful to decrease attack or special defense
+            if (isSpecialDefender) {
+                if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
                     currentUtil += 2;
+                } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
+                    currentUtil += 1;
                 }
-                    
-                // 4. Defnse is & evasiveness low priority for lowering. Who casres
-                if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.DEF) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.DEF)) {
-                    currentUtil -= 1;
-                } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.DEF) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.DEF)) {
-                    currentUtil -= 1;
-                }
-
-                //INCREASING OUR STATS
-                //1. If we are a special user, special attack/defense is really useful
-                if (isSpecialDefender) {
-                    //Special attackers should prioritize increasing their own SPECIAl stat over other stats
-                    if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
-                        //GET READY FOR THE ALAKAZAM SWEEEP
-                        currentUtil += 3;
-                    } else if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
-                        currentUtil += 1;
-                    }
-                } else {
-                    //Phjsyical attackers should prioritize increasing their own ATK stat over SPECIAL
-                    if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
-                        currentUtil += 2;
-                    } else if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
-                        currentUtil += 1;
-                    }
-                }
-                
-                //2.  If we were originally slower than out opponent but this stat move made us faster. Increase utiloity a good bit, otherwise not useful
-                if (getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) && getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD) > getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD)) {
+            } else {
+                if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
+                    currentUtil += 1;
+                } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
                     currentUtil += 2;
-                } else if ((getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) && getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD) <= getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD))){
-                    currentUtil -= 2;
-                }
-
-                //3. Defnse is useless. Honestly a waste of a valuable turn to increase defense stat
-                if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.DEF) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.DEF)) {
-                    currentUtil -=5 ;
-                }
-
-                //4. Accuracy also useless. If our accuracy dips low enough we should just switch pokemon to reverse the effect
-                if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ACC) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ACC)) {
-                    currentUtil -=5 ;
                 }
             }
+                // 3. Speed also useful to decrease
+            if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD)) {
+                currentUtil += 2;
+            }
+                
+            // 4. Defnse is & evasiveness low priority for lowering. Who casres
+            if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.DEF) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.DEF)) {
+                currentUtil -= 1;
+            } else if (getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.DEF) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.DEF)) {
+                currentUtil -= 1;
+            }
+
+            //INCREASING OUR STATS
+            //1. If we are a special user, special attack/defense is really useful
+            if (isSpecialDefender) {
+                //Special attackers should prioritize increasing their own SPECIAl stat over other stats
+                if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
+                    //GET READY FOR THE ALAKAZAM SWEEEP
+                    currentUtil += 3;
+                } else if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
+                    currentUtil += 1;
+                }
+            } else {
+                //Phjsyical attackers should prioritize increasing their own ATK stat over SPECIAL
+                if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ATK)) {
+                    currentUtil += 2;
+                } else if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPATK) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPATK)) {
+                    currentUtil += 1;
+                }
+            }
+            
+            //2.  If we were originally slower than out opponent but this stat move made us faster. Increase utiloity a good bit, otherwise not useful
+            if (getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) && getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD) > getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD)) {
+                currentUtil += 2;
+            } else if ((getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) < getOpponentTeamView(battle).getActivePokemonView().getCurrentStat(Stat.SPD) && getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD) <= getOpponentTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.SPD))){
+                currentUtil -= 2;
+            }
+
+            //3. Defnse is useless. Honestly a waste of a valuable turn to increase defense stat
+            if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.DEF) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.DEF)) {
+                currentUtil -=5 ;
+            }
+
+            //4. Accuracy also useless. If our accuracy dips low enough we should just switch pokemon to reverse the effect
+            if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ACC) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ACC)) {
+                currentUtil -=5 ;
+            }
+        }
         //Evaluate utility for a switchmove node
         } else {
-                //swithcmove
-                currentUtil = 0;
-            }
-            if (currentUtil > upperbound) {
-                currentUtil = upperbound;
-            } else if (currentUtil < lowerbound) {
-                currentUtil = lowerbound;
-            }
-    
+            //swithcmove
+            currentUtil = 0;
+        }
+        if (currentUtil > upperbound) {
+            currentUtil = upperbound;
+        } else if (currentUtil < lowerbound) {
+            currentUtil = lowerbound;
+        }
         return currentUtil;
     }
 
-
+/*
     public void util(Node node) {
         int lowerbound = -6;
         int upperbound = 6;
@@ -399,31 +422,39 @@ public class TreeTraversalAgent extends Agent  {
                 opp = 0;
             }
         } else {
-            ((MOC)node).setUtility(opp) ;
+            //WHY ARE WE DOING THIS???
+            ((MOC)node).setUtility(opp);
         }
         
-        
-        List<MoveView> possibleMoves = ((MinMaxNode)node).getMoves();
-        if (!possibleMoves.isEmpty()) {
-            /* ATTACK, DEBUFF/BUFF, SWITCH */
-            for (MoveView move : possibleMoves) {
-                List<Pair<Double, Battle.BattleView>> outcomes = move.getPotentialEffects(battle, caster, opp);
-                double expectedUtility = 0.0;
-                for (Pair<Double, Battle.BattleView> outcome : outcomes) {
-                    double probability = outcome.getFirst();
-                    BattleView newState = outcome.getSecond();
+        //Terminal node?
+        Team temp_team_me = new Team(battle.getTeam1View());
+        Team temp_team_opp = new Team(battle.getTeam2View());
 
-                    int utilityValue = utilFunction(move, battle, newState, casterView, enemyView);
-                    expectedUtility += probability * utilityValue;
+        //Terminal state?
+        if (temp_team_me.getNumAlivePokemon() == 0) {
+            //Enemy wins
+            ((MinMaxNode)node).setUtility(-6);
+        } else if (temp_team_opp.getNumAlivePokemon() == 0) {
+            //We win
+            ((MinMaxNode)node).setUtility(6);
+        } else {
+            List<MoveView> possibleMoves = ((MinMaxNode)node).getMoves();
+            if (!possibleMoves.isEmpty()) {
+                for (MoveView move : possibleMoves) {
+                    List<Pair<Double, Battle.BattleView>> outcomes = move.getPotentialEffects(battle, caster, opp);
+                    double expectedUtility = 0.0;
+                    for (Pair<Double, Battle.BattleView> outcome : outcomes) {
+                        double probability = outcome.getFirst();
+                        BattleView newState = outcome.getSecond();
+
+                        int utilityValue = utilFunction(move, battle, newState, casterView, enemyView);
+                        expectedUtility += probability * utilityValue;
+                    }
+                    ((MinMaxNode)node).addMoveExpectedUtil(expectedUtility);
                 }
-                ((MinMaxNode)node).addMoveExpectedUtil(expectedUtility);
             }   
-                
-                
         }
-
-        //Upper and lowerbound on util of a move.
-        
-
+                
     }
+         */
 }
