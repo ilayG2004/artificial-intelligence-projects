@@ -10,6 +10,8 @@ import edu.bu.pas.pokemon.core.Team.TeamView;
 import edu.bu.pas.pokemon.core.Move;
 import edu.bu.pas.pokemon.core.Move.MoveView;
 import edu.bu.pas.pokemon.core.Pokemon.PokemonView;
+import edu.bu.pas.pokemon.core.SwitchMove;
+import edu.bu.pas.pokemon.core.SwitchMove.SwitchMoveView;
 import edu.bu.pas.pokemon.utils.Pair;
 
 import edu.bu.pas.pokemon.core.enums.Stat;
@@ -91,6 +93,22 @@ public class Node {
     }
   }
 
+  public List<SwitchMove> generatePossibleSwitches(int myTeamIdx, Node node) {
+    List<SwitchMove> results = new ArrayList<>();
+    BattleView view = node.getBattle();
+    TeamView myTeamView = view.getTeamView(myTeamIdx);
+    int currPokemon = myTeamView.getActivePokemonIdx();
+    for(int idx = 0; idx < myTeamView.size(); ++idx) {
+      if(!myTeamView.getPokemonView(idx).hasFainted()) {
+        if (idx != currPokemon) {
+          SwitchMove swm = new SwitchMove(idx);
+          results.add(swm);
+        }
+      }
+    }
+    return results;
+  }
+
   public BattleView mostProbableOutcomeMultiHits(MoveView move, int myTeamIdx, int oppTeamIdx) {
     // move to artificially apply to a game state
     Move moveToApply = new Move("MyMove", move.getType(), move.getCategory(), move.getPower(),
@@ -122,7 +140,7 @@ public class Node {
 
   public void generateChildren(int myTeamIdx) {
     // if (this.depth == 3) {System.out.println("DEPTH: " + this.getDepth() + "  " +this.toString());}
-    if (this.depth > 5) { return; }
+    if (this.depth > 3) { return; }
     int oppTeamIdx = (myTeamIdx == 0) ? 1 : 0;
     TeamView myTeam = state.getTeamView(myTeamIdx);
     PokemonView myPoke = myTeam.getActivePokemonView();
@@ -152,6 +170,16 @@ public class Node {
         Node chanceNode = new Node(mostLikelyOutcome, this.depth + 1, "chance", move);
         this.children.add(chanceNode);
       }
+      List<SwitchMove> switches = generatePossibleSwitches(myTeamIdx, this);
+      if (!switches.isEmpty()) {
+        for (SwitchMove alternatePokemon : switches) {
+          MoveView swmv = alternatePokemon.getView();
+          List<Pair<Double, BattleView>> switchOutcomes = swmv.getPotentialEffects(state, myTeamIdx, oppTeamIdx);
+          BattleView switchResult = switchOutcomes.get(0).getSecond();
+          Node chanceNode = new Node(switchResult ,this.depth + 1, "chance", swmv);
+          this.children.add(chanceNode);
+        }
+      }
     //Product of a chance ndoe is an attack
     } else if (this.type.equals("chance")) {
       if (myTeamIdx == 0) {
@@ -165,3 +193,142 @@ public class Node {
   }
   
 }
+
+/*
+ * 
+ * public class Node {
+  private BattleView state;
+  private int depth;
+  private String type;
+  private MoveView move;
+  private List<Node> children;
+  private double utility;
+  public Node(BattleView state, int depth, String type, MoveView move) {
+    this.state = state;
+    this.depth = depth;
+    this.type = type;
+    this.move = move;
+    this.children = new ArrayList<>();
+    this.utility = 0;
+  }
+  public String toString() {
+    if (move != null) {
+      return depth + ":  " + type + "   " + move.getName() ;
+    } 
+    return type;
+  }
+
+  public List<Node> getChildren() {
+    return this.children;
+  }
+  public String getType() {
+    return this.type;
+  }
+  public BattleView getBattle() {
+    return this.state;
+  }
+  public MoveView getMove() {
+    return this.move;
+  }
+  public void setUtility(double u) {
+    this.utility = u;
+  }
+  public double getUtility() {
+    return this.utility;
+  }
+  public int getDepth() {
+    return this.depth;
+  }
+
+  public boolean isTerminalState(BattleView battle) {
+    Team temp_team_me = new Team(battle.getTeam1View());
+    Team temp_team_opp = new Team(battle.getTeam2View());
+    //Terminal state?
+    if (temp_team_me.getNumAlivePokemon() == 0) {
+        //Enemy wins
+        //((MinMaxNode)node).setUtility(-6);
+        System.out.println("Enemy wins");
+        return true;
+    } else if (temp_team_opp.getNumAlivePokemon() == 0) {
+        //We win
+        //((MinMaxNode)node).setUtility(6);
+        System.out.println("We wins");
+        return true;
+    } else {
+        return false;
+    }
+  }
+  public List<SwitchMove> generatePossibleSwitches(int myTeamIdx, Node node) {
+    List<SwitchMove> results = new ArrayList<>();
+    BattleView view = node.getBattle();
+    TeamView myTeamView = view.getTeamView(myTeamIdx);
+    int currPokemon = myTeamView.getActivePokemonIdx();
+    for(int idx = 0; idx < myTeamView.size(); ++idx) {
+      if(!myTeamView.getPokemonView(idx).hasFainted()) {
+        if (idx != currPokemon) {
+          SwitchMove swm = new SwitchMove(idx);
+          results.add(swm);
+        }
+      }
+    }
+    return results;
+  }
+
+  public BattleView mostProbableOutcome(MoveView move, int myTeamIdx, int oppTeamIdx) {
+    List<Pair<Double, BattleView>> outcomes = move.getPotentialEffects(state, myTeamIdx, oppTeamIdx);
+    double bestProb = Double.NEGATIVE_INFINITY;
+    BattleView bestBattle = null;
+    for (Pair<Double,BattleView> outcome : outcomes) {
+      if (outcome.getFirst() > bestProb) {
+        bestProb = outcome.getFirst();
+        bestBattle = outcome.getSecond();
+      }
+    }
+    return bestBattle;
+  }
+
+  public void generateChildren(int myTeamIdx) {
+    //if (this.depth == 3) {System.out.println("DEPTH: " + this.getDepth() + "  " +this.toString());}
+    if (this.depth > 5) { return; }
+    int oppTeamIdx = (myTeamIdx == 0) ? 1 : 0;
+    TeamView myTeam = state.getTeamView(myTeamIdx);
+    PokemonView myPoke = myTeam.getActivePokemonView();
+  
+    if (this.isTerminalState(state)) return;
+  
+    // Product of an attack is a chance node
+    if (this.type.equals("max") || this.type.equals("min")) {
+      List<MoveView> moves = myPoke.getAvailableMoves();
+
+      for (MoveView move : moves) {
+        if (move == null || move.getPP() == null || move.getPP() <= 0) continue;
+        
+        BattleView mostLikelyOutcome = mostProbableOutcome(move, myTeamIdx, oppTeamIdx);
+        Node chanceNode = new Node(mostLikelyOutcome, this.depth + 1, "chance", move);
+        this.children.add(chanceNode);
+      } 
+      // Consider any switches that can be performed
+      List<SwitchMove> switches = generatePossibleSwitches(myTeamIdx, this);
+      if (!switches.isEmpty()) {
+        for (SwitchMove alternatePokemon : switches) {
+          MoveView swmv = alternatePokemon.getView();
+          List<Pair<Double, BattleView>> switchOutcomes = swmv.getPotentialEffects(state, myTeamIdx, oppTeamIdx);
+          BattleView switchResult = switchOutcomes.get(0).getSecond();
+          Node chanceNode = new Node(switchResult ,this.depth + 1, "chance", swmv);
+          this.children.add(chanceNode);
+        }
+      }
+    //Product of a chance ndoe is an attack
+    } else if (this.type.equals("chance")) {
+      if (myTeamIdx == 0) {
+        Node newNode = new Node(this.state, this.depth + 1, "min", null);
+        this.children.add(newNode); // Opponent acts next
+      } else {
+        Node newNode = new Node(this.state, this.depth + 1, "max", null);
+        this.children.add(newNode); // Our agent acts next
+      }
+    }
+  }
+  
+}
+ */
