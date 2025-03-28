@@ -321,7 +321,7 @@ public class TreeTraversalAgent extends Agent  {
 
     public boolean isSuperEffectiveFr(Type myPoke1, Type oppPoke1) {
         if (myPoke1 != null && oppPoke1 != null) {
-            if (isSuperEffectiveFr(myPoke1, oppPoke1)) {
+            if (Type.isSuperEffective(myPoke1, oppPoke1)) {
                 return true;
             }
         }
