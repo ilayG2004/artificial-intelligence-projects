@@ -23,6 +23,7 @@ import edu.bu.pas.pokemon.core.SwitchMove.SwitchMoveView;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -221,15 +222,15 @@ public class TreeTraversalAgent extends Agent  {
             {
                 int util = 0;
                 //Is this living pokemon resistant to the enemy?
-                if (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())
-                || (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) || (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1())))  {
+                if (isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())
+                || (isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) || (isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1())))  {
                     util += 4;
                     System.out.println(this.getMyTeamView(view).getPokemonView(idx).getName() + " is effective against " + this.getOpponentTeamView(view).getActivePokemonView().getName());
                 } 
                 //Does this pokemon have any supereffective moves to use?
                 for (MoveView move : this.getMyTeamView(view).getPokemonView(idx).getAvailableMoves()) {
                     if (move.getPP() > 0 && move != null) {
-                        if (Type.isSuperEffective(move.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || Type.isSuperEffective(move.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
+                        if (isSuperEffectiveFr(move.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || isSuperEffectiveFr(move.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
                             util += 1;
                         }
                     }
@@ -317,7 +318,15 @@ public class TreeTraversalAgent extends Agent  {
 
         return move;
     }
-    
+
+    public boolean isSuperEffectiveFr(Type myPoke1, Type oppPoke1) {
+        if (myPoke1 != null && oppPoke1 != null) {
+            if (isSuperEffectiveFr(myPoke1, oppPoke1)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public int utilFunction(MoveView move, BattleView battle, BattleView projecBattleView, PokemonView casterView, PokemonView enemyView) {
         
@@ -352,16 +361,16 @@ public class TreeTraversalAgent extends Agent  {
                 }
 
                 //4x damage
-                if (Type.isSuperEffective(moveType, enemyTypes[0]) && Type.isSuperEffective(moveType, enemyTypes[1])) {
+                if (isSuperEffectiveFr(moveType, enemyTypes[0]) && isSuperEffectiveFr(moveType, enemyTypes[1])) {
                     currentUtil +=3;
                 //2x damage
-                } else if (Type.isSuperEffective(moveType, enemyTypes[0]) || Type.isSuperEffective(moveType, enemyTypes[1])){
+                } else if (isSuperEffectiveFr(moveType, enemyTypes[0]) || isSuperEffectiveFr(moveType, enemyTypes[1])){
                     currentUtil +=2;
                 //4x resistance
-                } else if (Type.isSuperEffective(enemyTypes[0], moveType) && Type.isSuperEffective(enemyTypes[1], moveType)) {
+                } else if (isSuperEffectiveFr(enemyTypes[0], moveType) && isSuperEffectiveFr(enemyTypes[1], moveType)) {
                     currentUtil -= 3;
                 //2x resistance
-                } else if (Type.isSuperEffective(enemyTypes[0], moveType) || Type.isSuperEffective(enemyTypes[1], moveType)) {
+                } else if (isSuperEffectiveFr(enemyTypes[0], moveType) || isSuperEffectiveFr(enemyTypes[1], moveType)) {
                     currentUtil -= 2;
                 }
                 //EVALUTE OVERALL DAMAGE
@@ -478,7 +487,7 @@ public class TreeTraversalAgent extends Agent  {
 
             //IS OUR CURRENT POKEMON THREATENED BY THE CURRENT ENEMY
             boolean isResisted = false;
-            if (Type.isSuperEffective(enemyPokeType1, activePokeType1) || Type.isSuperEffective(enemyPokeType1, activePokeType2) || Type.isSuperEffective(enemyPokeType2, activePokeType1) || Type.isAffectedBy(enemyPokeType2, activePokeType2)) {
+            if (isSuperEffectiveFr(enemyPokeType1, activePokeType1) ||isSuperEffectiveFr(enemyPokeType1, activePokeType2) || isSuperEffectiveFr(enemyPokeType2, activePokeType1) || isSuperEffectiveFr(enemyPokeType2, activePokeType2)) {
                 System.out.println(this.getMyTeamView(view).getActivePokemonView().getName() + " is resisted by " + this.getOpponentTeamView(view).getActivePokemonView().getName() + " " + enemyPokeType1 + " " + enemyPokeType2);
                 isResisted = true;
             }
@@ -486,7 +495,7 @@ public class TreeTraversalAgent extends Agent  {
             boolean threatenedByEnemy = false;
             for (MoveView enemyMv : this.getOpponentTeamView(view).getActivePokemonView().getAvailableMoves()) {
                 if (enemyMv.getPP() > 0 && enemyMv != null) {
-                    if ((Type.isSuperEffective(enemyMv.getType(), activePokeType1) || Type.isSuperEffective(enemyMv.getType(), activePokeType2)) && (enemyMv.getCategory() == Move.Category.SPECIAL || enemyMv.getCategory() == Move.Category.PHYSICAL)) {
+                    if ((isSuperEffectiveFr(enemyMv.getType(), activePokeType1) || isSuperEffectiveFr(enemyMv.getType(), activePokeType2)) && (enemyMv.getCategory() == Move.Category.SPECIAL || enemyMv.getCategory() == Move.Category.PHYSICAL)) {
                         threatenedByEnemy = true;
                         System.out.println(this.getMyTeamView(view).getActivePokemonView().getName() + " is threatened by " + this.getOpponentTeamView(view).getActivePokemonView().getName() + " " + enemyMv.getName());
                         break;
@@ -497,14 +506,14 @@ public class TreeTraversalAgent extends Agent  {
             if (isResisted && threatenedByEnemy) {
                 if(!this.getMyTeamView(view).getPokemonView(idx).hasFainted()) {
                     //Is this switch resistant?
-                    if (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), enemyPokeType1) || Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), enemyPokeType2)
-                    || Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), enemyPokeType1) || Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), enemyPokeType2))  {
+                    if (isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), enemyPokeType1) || isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), enemyPokeType2)
+                    || isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), enemyPokeType1) || isSuperEffectiveFr(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), enemyPokeType2))  {
                         currentUtil += 2;
                     } 
                     //Does this pokemon have any supereffective moves to use?
                     for (MoveView mv : this.getMyTeamView(view).getPokemonView(idx).getAvailableMoves()) {
                         if (mv.getPP() > 0 && mv != null) {
-                            if (Type.isSuperEffective(mv.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || Type.isSuperEffective(mv.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
+                            if (isSuperEffectiveFr(mv.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || isSuperEffectiveFr(mv.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
                                 currentUtil += 1;
                             }
                         }
