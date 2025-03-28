@@ -17,7 +17,7 @@ import edu.bu.pas.pokemon.core.DamageEquation;
 import edu.bu.pas.pokemon.core.Pokemon;
 import edu.bu.pas.pokemon.core.Pokemon.PokemonView;
 import edu.bu.pas.pokemon.core.SwitchMove;
-import edu.bu.pas.pokemon.core.SwitchMove.SwitchMoveView;;
+import edu.bu.pas.pokemon.core.SwitchMove.SwitchMoveView;
 
 
 

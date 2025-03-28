@@ -140,7 +140,7 @@ public class Node {
 
   public void generateChildren(int myTeamIdx) {
     // if (this.depth == 3) {System.out.println("DEPTH: " + this.getDepth() + "  " +this.toString());}
-    if (this.depth > 3) { return; }
+    if (this.depth > 7) { return; }
     int oppTeamIdx = (myTeamIdx == 0) ? 1 : 0;
     TeamView myTeam = state.getTeamView(myTeamIdx);
     PokemonView myPoke = myTeam.getActivePokemonView();
