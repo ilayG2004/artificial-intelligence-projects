@@ -268,7 +268,24 @@ public class Node {
     return type;
   }
 
-  
+  public List<Node> getChildren() {
+    return this.children;
+  }
+  public String getType() {
+    return this.type;
+  }
+  public BattleView getBattle() {
+    return this.state;
+  }
+  public MoveView getMove() {
+    return this.move;
+  }
+  public void setUtility(double u) {
+    this.utility = u;
+  }
+  public double getUtility() {
+    return this.utility;
+  }
 
   public boolean isTerminalState(BattleView battle) {
     Team temp_team_me = new Team(battle.getTeam1View());
@@ -289,22 +306,23 @@ public class Node {
     }
   }
 
-  //This only fetches one child. Recursively generate children during tree traversal
+
   public void generateChildren(int myTeamIdx) {
+    if (this.depth > 3) { return; }
     int oppTeamIdx = (myTeamIdx == 0) ? 1 : 0;
     TeamView myTeam = state.getTeamView(myTeamIdx);
     PokemonView myPoke = myTeam.getActivePokemonView();
     TeamView oppTeam = state.getTeamView(oppTeamIdx);
     PokemonView oppPoke = oppTeam.getActivePokemonView();
   
-    System.out.println(this.toString());
+    // System.out.println(this.toString());
   
     if (this.isTerminalState(state)) return;
   
     // Product of an attack is a chance node
     if (this.type.equals("max") || this.type.equals("min")) {
-      List<MoveView> moves = (this.type.equals("max")) ? myPoke.getAvailableMoves() : oppPoke.getAvailableMoves();
-  
+      List<MoveView> moves = myPoke.getAvailableMoves();
+
       for (MoveView move : moves) {
         if (move == null || move.getPP() == null || move.getPP() <= 0) continue;
   
@@ -314,20 +332,24 @@ public class Node {
           BattleView newState = outcome.getSecond();  // Result of the move
           Node chanceNode = new Node(newState, this.depth + 1, "chance", move);
           this.children.add(chanceNode);
+          if (this.type.equals("max")) {
+            chanceNode.generateChildren(0);
+          }
+          else {
+            chanceNode.generateChildren(1);
+          }
         }
       }
     //Product of a chance ndoe is an attack
     } else if (this.type.equals("chance")) {
-      PokemonView p0 = state.getTeamView(0).getActivePokemonView();
-      PokemonView p1 = state.getTeamView(1).getActivePokemonView();
-  
-      int spd0 = p0.getCurrentStat(Stat.SPD);
-      int spd1 = p1.getCurrentStat(Stat.SPD);
-  
-      if (spd0 >= spd1) {
-        this.children.add(new Node(this.state, this.depth + 1, "min", null)); // Opponent acts next
+      if (myTeamIdx == 0) {
+        Node newNode = new Node(this.state, this.depth + 1, "min", null);
+        this.children.add(newNode); // Opponent acts next
+        newNode.generateChildren(1);
       } else {
-        this.children.add(new Node(this.state, this.depth + 1, "max", null)); // Our agent acts next
+        Node newNode = new Node(this.state, this.depth + 1, "max", null);
+        this.children.add(newNode); // Our agent acts next
+        newNode.generateChildren(0);
       }
     }
   }

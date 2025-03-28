@@ -47,6 +47,7 @@ public class TreeTraversalAgent extends Agent  {
 		private final BattleView rootView;
         private final int maxDepth;
         private final int myTeamIdx;
+        private Node firstNode;
         
 
         // If you change the parameters of the constructor, you will also have to change
@@ -56,6 +57,7 @@ public class TreeTraversalAgent extends Agent  {
             this.rootView = rootView;
             this.maxDepth = maxDepth;
             this.myTeamIdx = myTeamIdx;
+            this.firstNode = new Node(this.rootView, 0, "max", null);
         }
 
 
@@ -64,7 +66,8 @@ public class TreeTraversalAgent extends Agent  {
 		public BattleView getRootView() { return this.rootView; }
         public int getMaxDepth() { return this.maxDepth; }
         public int getMyTeamIdx() { return this.myTeamIdx; }
-
+        public Node getFirstNode() { return this.firstNode; }
+        public void setFirstNode(Node node) { this.firstNode = node; }
 		/**
 		 * TODO: implement me!
 		 * This method should perform your tree-search from the root of the entire tree.
@@ -89,31 +92,74 @@ public class TreeTraversalAgent extends Agent  {
                 return false;
             }
         }
+        public Node expectiMinMaxPruner(Node root, double alpha, double beta, String prevType) {
+            Node bestChild = null;
+
+
+
+            if (isTerminalState(root.getBattle())) {
+                double terminalOutcome = util(root,"doesn't matter we will never check lol");
+                root.setUtility(terminalOutcome);
+                return root;
+            }
+
+            if (root.getType().equals("max")) {
+                double bestUtilityValue = Double.NEGATIVE_INFINITY;
+                for (Node child : root.getChildren()) {
+                    this.expectiMinMaxPruner(child, alpha, beta, "max").getUtility();
+                    double v = child.getUtility();
+                    if (v > bestUtilityValue) {
+                        bestUtilityValue = v;
+                        bestChild = child;
+                    }
+                    alpha = Math.max(alpha, bestUtilityValue);
+                    if (alpha >= beta) {
+                        break;
+                    }
+                }
+                return bestChild;
+            } else if (root.getType().equals("min")) {
+                double bestUtilityValue = Double.POSITIVE_INFINITY;
+                for (Node child : root.getChildren()) {
+                    this.expectiMinMaxPruner(child, alpha, beta, "min");
+                    double v = child.getUtility();
+
+                    if (v < bestUtilityValue) {
+                        bestUtilityValue = v;
+                        bestChild = child;
+                    }
+                    beta = Math.min(beta, bestUtilityValue);
+                    if(beta <= alpha) {
+                        break;
+                    }
+                }   
+                return bestChild;
+            //Utility of a chance node is the expected utility value of all of its outcomes
+            } else {
+                //Evaluate the move of that chance node
+                double expectedValue = util(root, prevType);
+                root.setUtility(expectedValue);
+                return root;
+            }
+            
+        }
+
+        public void treeBuildWrapper(BattleView battle) {
+            // wrapper to create tree
+
+            Node root = new Node(battle, 0, "max", null);
+
+            root.generateChildren(0);
+            this.setFirstNode(root);
+        }
+
+
         public MoveView stochasticTreeSearch( BattleView rootView) //, int depth)
         {
-            /*
-            Node bestChild = null;
-            
-            //BASE CASE: TERMINAL NODE
-            if (isTerminalState(rootView)) {
-                return ((MinMaxNode)root).getParent().get(Move);
-            }
-        
-            if (root instanceof MinMaxNode) {
-                //Max node
-                if (((MinMaxNode)root).getMinMax().equals("max")) {
-                    double alpha = Double.POSITIVE_INFINITY;
-                    List<Node> children = ((MinMaxNode)root).getKids();
-                    for (Node child : children) {
-                        alpha = Math.min(alpha, stochastic)
-                    }
-                //Min node
-                } else {
-
-                }
-            }
-                 */
-            return null;
+            treeBuildWrapper(rootView);
+            MoveView optimalMove = expectiMinMaxPruner(this.getFirstNode(), Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, "max").getMove();
+            System.out.println(optimalMove.getName() + "   has utility value of " + this.getFirstNode().getUtility() );
+            return optimalMove;
         }
 
         @Override
@@ -184,7 +230,6 @@ public class TreeTraversalAgent extends Agent  {
     @Override
     public MoveView getMove(BattleView battleView)
     {
-
         // will run the minimax algorithm in a background thread with a timeout
         ExecutorService backgroundThreadManager = Executors.newSingleThreadExecutor();
 
@@ -237,6 +282,7 @@ public class TreeTraversalAgent extends Agent  {
     
 
     public int utilFunction(MoveView move, BattleView battle, BattleView projecBattleView, PokemonView casterView, PokemonView enemyView) {
+        
         int lowerbound = -6;
         int upperbound = 6;
         int currentUtil = 0;
@@ -311,6 +357,7 @@ public class TreeTraversalAgent extends Agent  {
             }
         //STATUS EFFECT
         } else {
+            /*
             //ILAY TODO: SET SPECIFIC UTILITY VALUES BASED ON WHAT STATUS AND WHO IT IS EFFECTING
 
             //NOTE: This function DOES NOT ACCOUNT FOR PROBABILITY OF OUR STATUS ATTACK MOVE FAILING
@@ -380,6 +427,8 @@ public class TreeTraversalAgent extends Agent  {
             if (getMyTeamView(projecBattleView).getActivePokemonView().getCurrentStat(Stat.ACC) > getMyTeamView(battle).getActivePokemonView().getCurrentStat(Stat.ACC)) {
                 currentUtil -=5 ;
             }
+            */
+            currentUtil = -6;
         }
         //Evaluate utility for a switchmove node
         } else {
@@ -394,36 +443,31 @@ public class TreeTraversalAgent extends Agent  {
         return currentUtil;
     }
 
-/*
-    public void util(Node node) {
-        int lowerbound = -6;
-        int upperbound = 6;
+    public double util(Node node, String parentType) {
         
         int caster = -1;
         int opp = -1;
 
-        BattleView battle = (node).getBattle();
+        BattleView battle = node.getBattle();
 
         PokemonView casterView = this.getMyTeamView(battle).getActivePokemonView();
         PokemonView enemyView = this.getOpponentTeamView(battle).getActivePokemonView();
 
-        if (node instanceof MinMaxNode) {
-            if (((MinMaxNode)node).getMinMax().equals("max")) {
-                casterView = this.getMyTeamView(battle).getActivePokemonView();
-                enemyView = this.getOpponentTeamView(battle).getActivePokemonView();
-    
-                caster = 0;
-                opp = 1;
-            } else {
-                enemyView = this.getMyTeamView(battle).getActivePokemonView();
-                casterView = this.getOpponentTeamView(battle).getActivePokemonView();
-                
-                caster = 1;
-                opp = 0;
-            }
-        } else {
-            //WHY ARE WE DOING THIS???
-            ((MOC)node).setUtility(opp);
+        //CHANCE NODE'S PARENT IS A MAX. WE ARE APPLYING THE MOVE
+        if (parentType.equals("max")) {
+            casterView = this.getMyTeamView(battle).getActivePokemonView();
+            enemyView = this.getOpponentTeamView(battle).getActivePokemonView();
+
+            caster = 0;
+            opp = 1;
+
+        //CHANCE NOED'S PARENT IS A MIN. ENEMY IS APPLYING THE MOVE
+        } else if (parentType.equals("min")){
+            enemyView = this.getMyTeamView(battle).getActivePokemonView();
+            casterView = this.getOpponentTeamView(battle).getActivePokemonView();
+            
+            caster = 1;
+            opp = 0;
         }
         
         //Terminal node?
@@ -433,28 +477,28 @@ public class TreeTraversalAgent extends Agent  {
         //Terminal state?
         if (temp_team_me.getNumAlivePokemon() == 0) {
             //Enemy wins
-            ((MinMaxNode)node).setUtility(-6);
+            return -6;
         } else if (temp_team_opp.getNumAlivePokemon() == 0) {
             //We win
-            ((MinMaxNode)node).setUtility(6);
+            return 6;
         } else {
-            List<MoveView> possibleMoves = ((MinMaxNode)node).getMoves();
-            if (!possibleMoves.isEmpty()) {
-                for (MoveView move : possibleMoves) {
-                    List<Pair<Double, Battle.BattleView>> outcomes = move.getPotentialEffects(battle, caster, opp);
-                    double expectedUtility = 0.0;
-                    for (Pair<Double, Battle.BattleView> outcome : outcomes) {
-                        double probability = outcome.getFirst();
-                        BattleView newState = outcome.getSecond();
+            if (node.getMove() != null) {
+                MoveView move = node.getMove();
+                List<Pair<Double, Battle.BattleView>> outcomes = move.getPotentialEffects(battle, caster, opp);
+                double expectedUtility = 0.0;
+                for (Pair<Double, Battle.BattleView> outcome : outcomes) {
+                    double probability = outcome.getFirst();
+                    BattleView newState = outcome.getSecond();
 
-                        int utilityValue = utilFunction(move, battle, newState, casterView, enemyView);
-                        expectedUtility += probability * utilityValue;
-                    }
-                    ((MinMaxNode)node).addMoveExpectedUtil(expectedUtility);
+                    int utilityValue = utilFunction(move, battle, newState, casterView, enemyView);
+                    expectedUtility += probability * utilityValue;
                 }
-            }   
+                return expectedUtility;
+            } else {
+                System.out.println("WARNING... MOVE IS NULL");
+                return 0;
+            }
         }
                 
     }
-         */
 }
