@@ -28,224 +28,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-/*
-public interface Node {
-  void addChild(Node child);
-  double getUtility();
-  void setUtility(double util);
-  Node getParent();
-  void setParent(Node parent);
-  List<Node> getChildren();
-  void setBattle(BattleView battle);
-  BattleView getBattle();
-}
-
-class MOC implements Node {
-  private Double left_prob = 0.0;
-  private Double right_prob = 0.0;
-  private double utility;
-  private List<Node> children = new ArrayList<>();
-  private Node parent;
-  private edu.bu.pas.pokemon.core.Battle.BattleView battle;
-  private MoveView optimalMove;
-
-  public MOC() {
-      this.utility = 0;
-      this.parent = null;
-  }
-
-  public MOC(Node parent) {
-    this.utility = 0;
-    this.parent = parent;
-  }
-  public void addOptimalMove(MoveView move) {
-    this.optimalMove = move;
-  }
-  public MoveView getOptimalMove() {
-    return this.optimalMove;
-  }
-  @Override
-  public void addChild(Node child) {
-      this.children.add(child);
-  }
-
-  public void setProbs(double prob) {
-    this.left_prob = prob;
-    this.right_prob = 1 - prob;
-  }
-
-  public double getLeftProb() {
-    return this.left_prob;
-  }
-
-  public double getRightProb() {
-    return this.right_prob;
-  }
-
-  @Override
-  public double getUtility() {
-      return this.utility;
-  }
-
-  @Override
-  public void setUtility(double util) {
-      this.utility = util;
-  }
-
-  @Override
-  public Node getParent() {
-      return this.parent;
-  }
-
-  @Override
-  public void setParent(Node parent) {
-      this.parent = parent;
-  }
-
-  @Override
-  public List<Node> getChildren() {
-      return this.children;
-  }
-
-  @Override
-  public void setBattle(BattleView battle) {
-    this.battle = battle;
-  }
-
-  @Override
-  public BattleView getBattle() {
-    return this.battle;
-  }
-
-  @Override
-  public String toString() {
-    if (parent != null) {
-      return "MOC Node [Left Prob: " + this.left_prob + ", Right Prob: " + this.right_prob + "]" + ". Parent=" + parent.toString();
-    } else {
-      return "MOC Node [Left Prob: " + this.left_prob + ", Right Prob: " + this.right_prob + "]" + ". Parent=";
-    }
-  }
-}
-class MinMaxNode implements Node {
-  private String minmax;
-  private boolean isChance = false;
-  private boolean isSecond = false;
-  private double utility;
-  private List<Node> children = new ArrayList<>();
-  private Node parent;
-  private edu.bu.pas.pokemon.core.Battle.BattleView battle;
-  private List<edu.bu.pas.pokemon.core.Move.MoveView> possibleMoves;
-  private HashMap<MoveView, List<Pair<Double, BattleView>>> outcomes;
-  private List<Double> moveUtils = new ArrayList<>();
-
-
-  public MinMaxNode(String minmax, BattleView battle, List<MoveView> moves, Node root) {
-      this.minmax = minmax;
-      this.possibleMoves = moves;
-      this.battle = battle;
-      this.parent = root;
-  }
-
-  // DUMMY FUNCTION
-  @Override
-  public void addChild(Node child) {
-    this.children.add(child);
-  }
-
-  // DUMMY FUNCTION
-  @Override
-  public List<Node> getChildren() {
-    List<Node> lst = new ArrayList<>();
-    return lst;
-  }
-
-  public void setOutcomes(HashMap<MoveView, List<Pair<Double, BattleView>>> lst) {
-    this.outcomes = lst;
-  }
-
-  public HashMap<MoveView, List<Pair<Double, BattleView>>> getOutcomes() {
-    return this.outcomes;
-  }
-
-  // REAL ADDCHILD FUNCTION
-  public void addKid(Node child) {
-    this.children.add(child);
-  }
-
-  // REAL GETCHILDREN FUNCTION
-  public List<Node> getKids() {
-    return this.children;
-  }
-
-  public void setSecond() {
-    this.isSecond = true;
-  }
-
-  public boolean getSecond() {
-    return this.isSecond;
-  }
-
-  @Override
-  public double getUtility() {
-      return this.utility;
-  }
-
-  @Override
-  public void setUtility(double util) {
-      this.utility = util;
-  }
-
-  @Override
-  public Node getParent() {
-      return this.parent;
-  }
-
-  @Override
-  public void setParent(Node parent) {
-      this.parent = parent;
-  }
-
-  public String getMinMax() {
-      return this.minmax;
-  }
-
-  public List<MoveView> getMoves() {
-    return this.possibleMoves;
-  }
-
-  public void setMoves(List<MoveView> moves) {
-    this.possibleMoves = moves;
-  }
-
-  public void setBattle(BattleView battle) {
-    this.battle = battle;
-  }
-
-  public BattleView getBattle() {
-    return this.battle;
-  }
-  public String moveToString(List<edu.bu.pas.pokemon.core.Move.MoveView> possibleMoves) {
-    String res = "";
-    if (!possibleMoves.isEmpty()) {
-      for (MoveView move : possibleMoves) {
-        res = res + ", " + move.getName();
-      }
-    } else {
-      return "Empty move list";
-    }
-    return res;
-  }
-
-  @Override
-  public String toString() {
-      return "MinMaxNode [" + minmax + "] with moves: " + moveToString(possibleMoves) + ". Parent=" + parent.toString();
-  }
-
-  public void addMoveExpectedUtil(double i) {
-    this.moveUtils.add(i);
-  }
-}
-  */
 public class Node {
   private BattleView state;
   private int depth;
@@ -286,6 +68,9 @@ public class Node {
   public double getUtility() {
     return this.utility;
   }
+  public int getDepth() {
+    return this.depth;
+  }
 
   public boolean isTerminalState(BattleView battle) {
     Team temp_team_me = new Team(battle.getTeam1View());
@@ -306,16 +91,26 @@ public class Node {
     }
   }
 
+  public BattleView mostProbableOutcome(MoveView move, int myTeamIdx, int oppTeamIdx) {
+    System.out.println("fetching potential effects for " + move.getName());
+    List<Pair<Double, BattleView>> outcomes = move.getPotentialEffects(state, myTeamIdx, oppTeamIdx);
+    double bestProb = Double.NEGATIVE_INFINITY;
+    BattleView bestBattle = null;
+    for (Pair<Double,BattleView> outcome : outcomes) {
+      if (outcome.getFirst() > bestProb) {
+        bestProb = outcome.getFirst();
+        bestBattle = outcome.getSecond();
+      }
+    }
+    return bestBattle;
+  }
 
   public void generateChildren(int myTeamIdx) {
-    if (this.depth > 2) { return; }
+    if (this.depth == 3) {System.out.println("DEPTH: " + this.getDepth() + "  " +this.toString());}
+    if (this.depth > 3) { return; }
     int oppTeamIdx = (myTeamIdx == 0) ? 1 : 0;
     TeamView myTeam = state.getTeamView(myTeamIdx);
     PokemonView myPoke = myTeam.getActivePokemonView();
-    TeamView oppTeam = state.getTeamView(oppTeamIdx);
-    PokemonView oppPoke = oppTeam.getActivePokemonView();
-  
-    // System.out.println(this.toString());
   
     if (this.isTerminalState(state)) return;
   
@@ -325,31 +120,21 @@ public class Node {
 
       for (MoveView move : moves) {
         if (move == null || move.getPP() == null || move.getPP() <= 0) continue;
-  
-        List<Pair<Double, BattleView>> outcomes = move.getPotentialEffects(state, myTeamIdx, oppTeamIdx);
-  
-        for (Pair<Double, BattleView> outcome : outcomes) {
-          BattleView newState = outcome.getSecond();  // Result of the move
-          Node chanceNode = new Node(newState, this.depth + 1, "chance", move);
-          this.children.add(chanceNode);
-          if (this.type.equals("max")) {
-            chanceNode.generateChildren(0);
-          }
-          else {
-            chanceNode.generateChildren(1);
-          }
-        }
+        //System.out.println(move.getName());
+        //if (move.getName().equals("Light Screen") || move.getName().equals("Double Slap") || move.getName().equals("Pin Missile")) { continue;}
+        
+        BattleView mostLikelyOutcome = mostProbableOutcome(move, myTeamIdx, oppTeamIdx);
+        Node chanceNode = new Node(mostLikelyOutcome, this.depth + 1, "chance", move);
+        this.children.add(chanceNode);
       }
     //Product of a chance ndoe is an attack
     } else if (this.type.equals("chance")) {
       if (myTeamIdx == 0) {
         Node newNode = new Node(this.state, this.depth + 1, "min", null);
         this.children.add(newNode); // Opponent acts next
-        newNode.generateChildren(1);
       } else {
         Node newNode = new Node(this.state, this.depth + 1, "max", null);
         this.children.add(newNode); // Our agent acts next
-        newNode.generateChildren(0);
       }
     }
   }

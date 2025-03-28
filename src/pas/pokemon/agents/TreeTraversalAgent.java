@@ -95,8 +95,6 @@ public class TreeTraversalAgent extends Agent  {
         public Node expectiMinMaxPruner(Node root, double alpha, double beta, String prevType) {
             Node bestChild = null;
 
-
-
             if (isTerminalState(root.getBattle())) {
                 double terminalOutcome = util(root,"doesn't matter we will never check lol");
                 root.setUtility(terminalOutcome);
@@ -104,6 +102,7 @@ public class TreeTraversalAgent extends Agent  {
             }
 
             if (root.getType().equals("max")) {
+                root.generateChildren(0);
                 double bestUtilityValue = Double.NEGATIVE_INFINITY;
                 for (Node child : root.getChildren()) {
                     this.expectiMinMaxPruner(child, alpha, beta, "max").getUtility();
@@ -120,6 +119,7 @@ public class TreeTraversalAgent extends Agent  {
                 }
                 return bestChild;
             } else if (root.getType().equals("min")) {
+                root.generateChildren(1);
                 double bestUtilityValue = Double.POSITIVE_INFINITY;
                 for (Node child : root.getChildren()) {
                     this.expectiMinMaxPruner(child, alpha, beta, "min");
@@ -139,6 +139,17 @@ public class TreeTraversalAgent extends Agent  {
             //Utility of a chance node is the expected utility value of all of its outcomes
             } else {
                 //Evaluate the move of that chance node
+                if (prevType.equals("max")) { 
+                    root.generateChildren(0);
+                    for (Node child : root.getChildren()) {
+                        this.expectiMinMaxPruner(child, alpha, beta, "min");
+                    }
+                } else {
+                    root.generateChildren(1);
+                    for (Node child : root.getChildren()) {
+                        this.expectiMinMaxPruner(child, alpha, beta, "max");
+                    }
+                }
                 double expectedValue = util(root, prevType);
                 root.setUtility(expectedValue);
                 return root;
@@ -151,7 +162,7 @@ public class TreeTraversalAgent extends Agent  {
 
             Node root = new Node(battle, 0, "max", null);
 
-            root.generateChildren(0);
+            //root.generateChildren(0);
             this.setFirstNode(root);
         }
 
@@ -199,29 +210,54 @@ public class TreeTraversalAgent extends Agent  {
         // TODO: replace me! This code calculates the first-available pokemon.
         // It is likely a good idea to expand a bunch of trees with different choices as the active pokemon on your
         // team, and see which pokemon is your best choice by comparing the values of the root nodes.
+        int maxUtil = 8;
+        int bestPokemonIdx = -1;
+        int bestPokemonUtil = -1;
 
-
+        System.out.println("Choosing next pokemon...");
         for(int idx = 0; idx < this.getMyTeamView(view).size(); ++idx)
         {
             if(!this.getMyTeamView(view).getPokemonView(idx).hasFainted())
             {
+                int util = 0;
                 //Is this living pokemon resistant to the enemy?
-                if (this.getMyTeamView(view).getPokemonView(idx).getCurrentType1().isSuperEffective(this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2()) || 
-                this.getMyTeamView(view).getPokemonView(idx).getCurrentType2().isSuperEffective(this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
+                if (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())
+                || (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType1(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) || (Type.isSuperEffective(this.getMyTeamView(view).getPokemonView(idx).getCurrentType2(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1())))  {
+                    util += 4;
+                    System.out.println(this.getMyTeamView(view).getPokemonView(idx).getName() + " is effective against " + this.getOpponentTeamView(view).getActivePokemonView().getName());
+                } 
+                //Does this pokemon have any supereffective moves to use?
+                for (MoveView move : this.getMyTeamView(view).getPokemonView(idx).getAvailableMoves()) {
+                    if (move.getPP() > 0 && move != null) {
+                        if (Type.isSuperEffective(move.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType1()) || Type.isSuperEffective(move.getType(), this.getOpponentTeamView(view).getActivePokemonView().getCurrentType2())) {
+                            util += 1;
+                        }
+                    }
+                }
+                if (util > bestPokemonUtil) {
+                    bestPokemonUtil = util;
+                    bestPokemonIdx = idx;
+                }
+                if (bestPokemonUtil > maxUtil) {
+                    bestPokemonUtil = maxUtil;
+                }
+
+            }
+        }
+
+        //If we have no pokemon that are effective or have effective move against an opponent. Just pick the first not dead pokemon in the list
+        if (bestPokemonUtil <= 0) {
+            System.out.println("No effective pokemon");
+            for(int idx = 0; idx < this.getMyTeamView(view).size(); ++idx)
+            {
+                if(!this.getMyTeamView(view).getPokemonView(idx).hasFainted())
+                {
                     return idx;
                 }
             }
         }
-        //Otherwise just pick the first not dead pokemon
-        for(int idx = 0; idx < this.getMyTeamView(view).size(); ++idx)
-        {
-            if(!this.getMyTeamView(view).getPokemonView(idx).hasFainted())
-            {
-                //Is this living pokemon resistant to the enemy?
-                return idx;
-            }
-        }
-        return null;
+        System.out.println(bestPokemonIdx + "  " + bestPokemonUtil);
+        return bestPokemonIdx;
     }
 
     /**
