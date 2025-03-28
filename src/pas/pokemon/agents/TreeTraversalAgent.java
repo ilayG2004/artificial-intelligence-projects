@@ -112,6 +112,7 @@ public class TreeTraversalAgent extends Agent  {
                         bestUtilityValue = v;
                         bestChild = child;
                     }
+                    root.setUtility(bestUtilityValue);
                     alpha = Math.max(alpha, bestUtilityValue);
                     if (alpha >= beta) {
                         break;
@@ -128,6 +129,7 @@ public class TreeTraversalAgent extends Agent  {
                         bestUtilityValue = v;
                         bestChild = child;
                     }
+                    root.setUtility(bestUtilityValue);
                     beta = Math.min(beta, bestUtilityValue);
                     if(beta <= alpha) {
                         break;
