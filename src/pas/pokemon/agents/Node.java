@@ -91,6 +91,21 @@ public class Node {
     }
   }
 
+  public BattleView mostProbableOutcomeMultiHits(MoveView move, int myTeamIdx, int oppTeamIdx) {
+    // move to artificially apply to a game state
+    Move moveToApply = new Move("MyMove", move.getType(), move.getCategory(), move.getPower(),
+    move.getAccuracy(), move.getPP(), move.getCriticalHitRatio(), move.getPriority());
+
+    Battle newBattle = new Battle(state);
+
+    // all multi-hit moves besides light screen are damaging, assume they hit for 2 times each, calculate some game state
+    moveToApply.apply(newBattle, myTeamIdx, oppTeamIdx);
+    moveToApply.apply(newBattle, myTeamIdx, oppTeamIdx);
+    
+    BattleView battleV = new BattleView(newBattle);
+    return battleV;
+  }
+
   public BattleView mostProbableOutcome(MoveView move, int myTeamIdx, int oppTeamIdx) {
     System.out.println("fetching potential effects for " + move.getName());
     List<Pair<Double, BattleView>> outcomes = move.getPotentialEffects(state, myTeamIdx, oppTeamIdx);
@@ -106,8 +121,8 @@ public class Node {
   }
 
   public void generateChildren(int myTeamIdx) {
-    if (this.depth == 3) {System.out.println("DEPTH: " + this.getDepth() + "  " +this.toString());}
-    if (this.depth > 3) { return; }
+    // if (this.depth == 3) {System.out.println("DEPTH: " + this.getDepth() + "  " +this.toString());}
+    if (this.depth > 5) { return; }
     int oppTeamIdx = (myTeamIdx == 0) ? 1 : 0;
     TeamView myTeam = state.getTeamView(myTeamIdx);
     PokemonView myPoke = myTeam.getActivePokemonView();
@@ -123,7 +138,17 @@ public class Node {
         //System.out.println(move.getName());
         //if (move.getName().equals("Light Screen") || move.getName().equals("Double Slap") || move.getName().equals("Pin Missile")) { continue;}
         
-        BattleView mostLikelyOutcome = mostProbableOutcome(move, myTeamIdx, oppTeamIdx);
+        String moveName = move.getName();
+        BattleView mostLikelyOutcome;
+        if (moveName.equals("Arm Thrust") || moveName.equals("Barrage") || moveName.equals("Bone Rush") || moveName.equals("Bullset Seed") || moveName.equals("Comet Punch")
+            || moveName.equals("Double Slap") || moveName.equals("Fury Attack") || moveName.equals("Fury Swipes") || moveName.equals("Icicle Spear") || moveName.equals("Pin Missile")
+            || moveName.equals("Rock Blast") || moveName.equals("Spike Cannon") || moveName.equals("Tail Slap") || moveName.equals("Bonemerang")
+            || moveName.equals("Double Hit") || moveName.equals("Double Kick") || moveName.equals("Double Chop") || moveName.equals("Gear Sauce")
+            || moveName.equals("Twineedle")) {
+            
+          mostLikelyOutcome = mostProbableOutcomeMultiHits(move, myTeamIdx, oppTeamIdx);
+        }
+        else {mostLikelyOutcome = mostProbableOutcome(move, myTeamIdx, oppTeamIdx);}
         Node chanceNode = new Node(mostLikelyOutcome, this.depth + 1, "chance", move);
         this.children.add(chanceNode);
       }
