@@ -100,7 +100,6 @@ public class TetrisQAgent
             int tallestPoint = -1;
             // FEATURE 2: Topography of board. What is the bumpiness? Ideally we want our tertis board to stay flat for easy row clear
             int bumpiness = 0;
-            // FEATURE 4: All column heights -- vertical position of highest occupied point in a column
             int[] columnHeights = new int[c];
             //Search from top down. Starting at row zero and making your way down  
             for (int x = 0; x < c; x++) {
@@ -125,10 +124,10 @@ public class TetrisQAgent
 
             // FEATURE 3: Does this piece clear any rows on the board? Ideally we want our action to result in full rows
             int clearedRows = 0;
-            for (int x = 0; x < c; x++) {
+            for (int y = 0; y < r; y++) {
                 // Lazy check for cleared rows: there should be no cleared row unless our piece caused it. Otherwise they would have been deleted before this game state
                 boolean rowCleared = true;
-                for (int y = 0; y < r; y++) {
+                for (int x = 0; x < c; c++) {
                     if (board.get(x,y) == 0) {
                         rowCleared = false;
                         break;
@@ -142,7 +141,7 @@ public class TetrisQAgent
             // Determine the total number of features:
             // - flattenedImage is a row vector with some number of elements
             // - plus 3 additional features (tallest point, bumpiness, rows cleared by this action)
-            int totalFeatures = 3 + columnHeights.length;
+            int totalFeatures = 3;
 
             // Create a new Matrix to hold the full feature vector.
             Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
@@ -151,13 +150,6 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 0, (double) tallestPoint);
             fullFeatureVector.set(0, 1, (double) bumpiness);
             fullFeatureVector.set(0, 2, (double) clearedRows);
-            // TO BRAINSTORM: 
-                // Might be OD to have a fuck ton of columns in our row-vector input related to just column height...
-            int nextColumn = 3;
-            for (int i = 0; i < columnHeights.length; i++) {
-                int cHeight = columnHeights[i];
-                fullFeatureVector.set(0, nextColumn+i, (double) cHeight);
-            }
 
             return fullFeatureVector;
 
@@ -314,9 +306,6 @@ public class TetrisQAgent
         score = (bumpiness * -3);
         score -= (tallestPoint * 2);
         score += (scoreThisTurn/6); // score earned from placing previous mino
-        for (int i = 0; i < columnHeights.length; i ++) {
-            score -= (columnHeights[i] * 0.5);
-        }
 
         return score;
     }
