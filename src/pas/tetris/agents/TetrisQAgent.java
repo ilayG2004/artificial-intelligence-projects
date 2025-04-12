@@ -57,12 +57,21 @@ public class TetrisQAgent
         // this example will create a 3-layer neural network (1 hidden layer)
         // in this example, the input to the neural network is the
         // image of the board unrolled into a giant vector
-        final int numPixelsInImage = Board.NUM_ROWS * Board.NUM_COLS;
-        final int hiddenDim = 2 * numPixelsInImage;
+        final int inputLayer = 4;
+        final int hiddenDim = 16;
         final int outDim = 1;
-
+        /*Sequential: represents a neural network where layers are arranged sequentially (i.e. a line graph) */
         Sequential qFunction = new Sequential();
-        qFunction.add(new Dense(numPixelsInImage, hiddenDim));
+        /* 
+        Dense: Dense connection between two groups of artificial neurons (i.e. fully connected layer). 
+        This class represents the equation Z = X*W + b where W and b are Parameter matrices, and X is a batch of input examples.
+        */
+
+        qFunction.add(new Dense(inputLayer, hiddenDim));
+        qFunction.add(new Tanh());
+        qFunction.add(new Dense(hiddenDim, hiddenDim));
+        qFunction.add(new Tanh());
+        qFunction.add(new Dense(hiddenDim, hiddenDim));
         qFunction.add(new Tanh());
         qFunction.add(new Dense(hiddenDim, outDim));
 
@@ -182,7 +191,13 @@ public class TetrisQAgent
                                  final GameCounter gameCounter)
     {
         // System.out.println("cycleIdx=" + gameCounter.getCurrentCycleIdx() + "\tgameIdx=" + gameCounter.getCurrentGameIdx());
-        return this.getRandom().nextDouble() <= EXPLORATION_PROB;
+        // Less likely to explore as game counter increases
+        long maxCycles = gameCounter.getNumCycles();
+        long currentCycle = gameCounter.getCurrentCycleIdx();
+
+        // In the beginning, explore 50% of time, half way thru cycles explore 25% of time, all the way thru 5% of the time
+        double exploration_prob = 0.5 - (0.2 * (currentCycle*2/maxCycles));
+        return this.getRandom().nextDouble() <= exploration_prob;
     }
 
     /**
