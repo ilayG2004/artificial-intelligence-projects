@@ -88,22 +88,19 @@ public class TetrisQAgent
     public Matrix getQFunctionInput(final GameView game,
                                     final Mino potentialAction)
     {
-        Matrix flattenedImage = null;
-
         try
         {
-            //FEATURE 1:  Board of occupied & unoccupied spaces
-            flattenedImage = game.getGrayscaleImage(potentialAction).flatten();
-
-
-            // FEATURE 2: Tallest occupied point on board: How close are we to losing?
-            // FEATURE 3: Topography of board. What is the bumpiness? Ideally we want our tertis board to stay flat for easy row clear
+           
+            
             Matrix board = game.getGrayscaleImage(potentialAction);
             Shape boardSize = board.getShape();
             int c = boardSize.getNumCols();
             int r = boardSize.getNumRows();
+            // FEATURE 1: Tallest occupied point on board: How close are we to losing?
             int tallestPoint = -1;
+            // FEATURE 2: Topography of board. What is the bumpiness? Ideally we want our tertis board to stay flat for easy row clear
             int bumpiness = 0;
+            // FEATURE 4: All column heights -- vertical position of highest occupied point in a column
             int[] columnHeights = new int[c];
             //Search from top down. Starting at row zero and making your way down  
             for (int x = 0; x < c; x++) {
@@ -126,7 +123,7 @@ public class TetrisQAgent
                 bumpiness += Math.abs(columnHeights[x + 1] - columnHeights[x]);
             }    
 
-            // FEATURE 4: Does this piece clear any rows on the board? Ideally we want our action to result in full rows
+            // FEATURE 3: Does this piece clear any rows on the board? Ideally we want our action to result in full rows
             int clearedRows = 0;
             for (int x = 0; x < c; x++) {
                 // Lazy check for cleared rows: there should be no cleared row unless our piece caused it. Otherwise they would have been deleted before this game state
@@ -139,30 +136,28 @@ public class TetrisQAgent
                 }
                 if (rowCleared) { clearedRows++; }
             }
-            
 
+            
 
             // Determine the total number of features:
             // - flattenedImage is a row vector with some number of elements
             // - plus 3 additional features (tallest point, bumpiness, rows cleared by this action)
-            int numFlattenedFeatures = flattenedImage.getShape().getNumCols();
-            int totalFeatures = numFlattenedFeatures + 3;
+            int totalFeatures = 3 + columnHeights.length;
 
             // Create a new Matrix to hold the full feature vector.
             Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
 
-            // Copy the flattened image features into the new matrix.
-            for (int j = 0; j < numFlattenedFeatures; j++) {
-                fullFeatureVector.set(0, j, flattenedImage.get(0, j));
+            // Append the features:
+            fullFeatureVector.set(0, 0, (double) tallestPoint);
+            fullFeatureVector.set(0, 1, (double) bumpiness);
+            fullFeatureVector.set(0, 2, (double) clearedRows);
+            // TO BRAINSTORM: 
+                // Might be OD to have a fuck ton of columns in our row-vector input related to just column height...
+            int nextColumn = 3;
+            for (int i = 0; i < columnHeights.length; i++) {
+                int cHeight = columnHeights[i];
+                fullFeatureVector.set(0, nextColumn+i, (double) cHeight);
             }
-
-            // Append the extra features:
-            // At index numFlattenedFeatures, store the tallest point.
-            // At index numFlattenedFeatures + 1, store bumpiness.
-            // At index numFlattenedFeaturees + 2, store cleared rows.
-            fullFeatureVector.set(0, numFlattenedFeatures, (double) tallestPoint);
-            fullFeatureVector.set(0, numFlattenedFeatures + 1, (double) bumpiness);
-            fullFeatureVector.set(0, numFlattenedFeatures + 2, (double) clearedRows);
 
             return fullFeatureVector;
 
@@ -172,7 +167,7 @@ public class TetrisQAgent
             System.exit(-1);
         }
 
-        return flattenedImage;
+        return null;
     }
 
     /**
@@ -275,6 +270,8 @@ public class TetrisQAgent
      * (unless you have a long hole waiting for an I-block). When you design a reward
      * signal that is less sparse, you should see your model optimize this reward over time.
      */
+
+    //Life is pain approach: Everything contributing to height or unflat topography "hurts" our model. Model will try to minimize this pain
     @Override
     public double getReward(final GameView game)
     {
@@ -308,25 +305,18 @@ public class TetrisQAgent
             bumpiness += Math.abs(columnHeights[x + 1] - columnHeights[x]);
         }    
 
-        // FEATURE 4: Does this piece clear any rows on the board? Ideally we want our action to result in full rows
-        int clearedRows = 0;
-        for (int x = 0; x < c; x++) {
-            // Lazy check for cleared rows: there should be no cleared row unless our piece caused it. Otherwise they would have been deleted before this game state
-            boolean rowCleared = true;
-            for (int y = 0; y < r; y++) {
-                if (board.isCoordinateOccupied(x, y)) {
-                    rowCleared = false;
-                    break;
-                }
-            }
-            if (rowCleared) { clearedRows++; }
-        }
+        // FEATURE 3: Does this piece clear any rows on the board?
+            // According to professor wood we can never really detect a cleared row -- it will be deleted from the game state before this function is called
+            // The work-around is just checking the score earned this turn
+        int scoreThisTurn = game.getScoreThisTurn();
 
         // prioritizing a flat board, and a board with cleared rows
         score = (bumpiness * -3);
-        score += (clearedRows * 2);
         score -= (tallestPoint * 2);
-        score += (game.getScoreThisTurn()/6); // score earned from placing previous mino
+        score += (scoreThisTurn/6); // score earned from placing previous mino
+        for (int i = 0; i < columnHeights.length; i ++) {
+            score -= (columnHeights[i] * 0.5);
+        }
 
         return score;
     }
