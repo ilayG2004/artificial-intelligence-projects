@@ -38,7 +38,7 @@ public class TetrisQAgent
 {
 
     //public static final double EXPLORATION_PROB = 0.05;
-    private Hashtable<GameView, Integer> experienced;
+    private Hashtable<Matrix, Integer> exploredCounts;
 
     private Random random;
 
@@ -172,6 +172,25 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 2, (double) clearedRows);
             fullFeatureVector.set(0, 3, (double) numUnreachables);
 
+
+
+            /*
+             * WHEN YOU ALTER FEATURE VECTOR, MUST CHANGE HOW THE METHOD:
+             * getStateMoveCount() works, making sure the vector
+             * creation is identical to this method
+             */
+
+
+
+            // updates exploredCounts with every feature vector created
+            if (exploredCounts.containsKey(fullFeatureVector)) { 
+                // if we've seen this feature vector
+                Integer currentCount = exploredCounts.get(fullFeatureVector);
+                exploredCounts.put(fullFeatureVector, currentCount + 1);
+            } else {
+                exploredCounts.put(fullFeatureVector, 1);
+            }
+
             return fullFeatureVector;
 
         } catch(Exception e)
@@ -183,33 +202,122 @@ public class TetrisQAgent
         return null;
     }
 
-    /**
-     * This method is used to decide if we should follow our current policy
-     * (i.e. our q-function), or if we should ignore it and take a random action
-     * (i.e. explore).
-     *
-     * Remember, as the q-function learns, it will start to predict the same "good" actions
-     * over and over again. This can prevent us from discovering new, potentially even
-     * better states, which we want to do! So, sometimes we should ignore our policy
-     * and explore to gain novel experiences.
-     *
-     * The current implementation chooses to ignore the current policy around 5% of the time.
-     * While this strategy is easy to implement, it often doesn't perform well and is
-     * really sensitive to the EXPLORATION_PROB. I would recommend devising your own
-     * strategy here.
+   /**
+     * Function used to create quasi feature vectors based off some 
+     * possible exploration game state and list of moves. Returns its count.
+     * @param game
+     * @param move
+     */
+    public Integer getStateMoveCount(GameView game, Mino move) {
+        try {
+            Matrix board = game.getGrayscaleImage(move);
+            Shape boardSize = board.getShape();
+            int c = boardSize.getNumCols();
+            int r = boardSize.getNumRows();
+            // FEATURE 1: Tallest occupied point on board: How close are we to losing?
+            int tallestPoint = -1;
+            // FEATURE 2: Topography of board. What is the bumpiness? Ideally we want our tertis board to stay flat for easy row clear
+            int bumpiness = 0;
+            // FEATURE 4: All column heights -- vertical position of highest occupied point in a column
+            int[] columnHeights = new int[c];
+            //Search from top down. Starting at row zero and making your way down  
+            for (int x = 0; x < c; x++) {
+                int cHeight = 0;
+                for (int y = 0; y < r; y++) {
+                    if ((board.get(x,y) == 0.5 || board.get(x,y) == 1)) {
+                        //Max height of a column is the first nonzero value we come across when going from top to bottom
+                        cHeight = r-y;
+                        break;
+                    }  
+                }
+                columnHeights[x] = cHeight;
+                if (cHeight > tallestPoint) {
+                    tallestPoint = cHeight;
+                }
+            }
+
+            //Bumpiness = sum of the difference between adjacent columns's max heights
+            for (int x = 0; x < c - 1; x++) {
+                bumpiness += Math.abs(columnHeights[x + 1] - columnHeights[x]);
+            }    
+
+            // FEATURE 3: Does this piece clear any rows on the board? Ideally we want our action to result in full rows
+            int clearedRows = 0;
+            for (int x = 0; x < c; x++) {
+                // Lazy check for cleared rows: there should be no cleared row unless our piece caused it. Otherwise they would have been deleted before this game state
+                boolean rowCleared = true;
+                for (int y = 0; y < r; y++) {
+                    if (board.get(x,y) == 0) {
+                        rowCleared = false;
+                        break;
+                    }
+                }
+                if (rowCleared) { clearedRows++; }
+            }
+
+            
+
+            // Determine the total number of features:
+            // - flattenedImage is a row vector with some number of elements
+            // - plus 3 additional features (tallest point, bumpiness, rows cleared by this action)
+            int totalFeatures = 3 + columnHeights.length;
+
+            // Create a new Matrix to hold the full feature vector.
+            Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
+
+            // Append the features:
+            fullFeatureVector.set(0, 0, (double) tallestPoint);
+            fullFeatureVector.set(0, 1, (double) bumpiness);
+            fullFeatureVector.set(0, 2, (double) clearedRows);
+
+
+            /*
+             * AS WE CHANGE OUR FEATURE VECTORS, THIS FUNCTION
+             * MUST CHANGE IDENTICALLY. 
+             */
+
+
+            // We now have our full quasi feature vector created by our QInputFunction
+            // All that is left is to get its counter from exploredCounts
+
+            if (exploredCounts.containsKey(fullFeatureVector)) {
+                return exploredCounts.get(fullFeatureVector);
+            } else {
+                return 0;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            return 0;
+        }
+
+    }
+
+
+    /*
+     * This method should return a boolean on whether or not we should
+     * explore a possible game state. Currently, we are given a GameView without
+     * a mino. I have generated all possible Minos, their counts given by the
+     * getStateMoveCount
      */
     @Override
     public boolean shouldExplore(final GameView game,
                                  final GameCounter gameCounter)
     {
-        // System.out.println("cycleIdx=" + gameCounter.getCurrentCycleIdx() + "\tgameIdx=" + gameCounter.getCurrentGameIdx());
-        // Less likely to explore as game counter increases
-        long maxCycles = gameCounter.getNumCycles();
-        long currentCycle = gameCounter.getCurrentCycleIdx();
+        // Keep a running totalCount of all our counts for each 
+        // GameView, Mino pairing
+        List<Mino> possibleMoves = game.getFinalMinoPositions();
+        Integer totalCount = 0;
 
-        // In the beginning, explore 50% of time, half way thru cycles explore 25% of time, all the way thru 5% of the time
-        double exploration_prob = 0.5 - (0.2 * (currentCycle*2/maxCycles));
-        return this.getRandom().nextDouble() <= exploration_prob;
+        for (int i = 0; i < possibleMoves.size(); i++) {
+            Integer count = getStateMoveCount(game, possibleMoves.get(i));
+            totalCount = totalCount + count;
+        }
+
+        // Return true if our total count is less than 2 times the total
+        // # of moves, i.e. if we have seen these state and move pairs an
+        // average of 2 or less times
+        return totalCount <= (3 * possibleMoves.size());
     }
 
     /**
@@ -221,12 +329,33 @@ public class TetrisQAgent
      * option, which in practice doesn't work as well as a more guided strategy.
      * I would recommend devising your own strategy here.
      */
+
+    /*
+     * This method returns the Mino in the Mino GameView pair
+     * we have seen the least. 
+     */
     @Override
     public Mino getExplorationMove(final GameView game)
     {
-        int randIdx = this.getRandom().nextInt(game.getFinalMinoPositions().size());
-        return game.getFinalMinoPositions().get(randIdx);
+        // list of all possible moves 
+        List<Mino> possibleMoves = game.getFinalMinoPositions();
+        Integer lowestCount = Integer.MAX_VALUE;
+
+        // to avoid null reference issues, initialize this as our first possible Mino
+        Mino returnedMove = possibleMoves.get(0);
+
+        for (int i = 0; i < possibleMoves.size(); i++){
+            Mino move = possibleMoves.get(i);
+            Integer count = getStateMoveCount(game, move);
+            if (count <= lowestCount) {
+                returnedMove = move;
+                lowestCount = count;
+            }
+        }
+
+        return returnedMove;
     }
+
 
     /**
      * This method is called by the TrainerAgent after we have played enough training games.
