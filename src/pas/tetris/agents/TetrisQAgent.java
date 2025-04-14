@@ -37,7 +37,8 @@ public class TetrisQAgent
     extends QAgent
 {
 
-    public static final double EXPLORATION_PROB = 0.05;
+    //public static final double EXPLORATION_PROB = 0.05;
+    private Hashtable<GameView, Integer> experienced;
 
     private Random random;
 
@@ -144,13 +145,23 @@ public class TetrisQAgent
                 }
                 if (rowCleared) { clearedRows++; }
             }
-
             
+            // FEATURE 4: Any unreachable holes in columns? Did we build a tower that leaves empty spaces impossible to reach?
+            int numUnreachables = 0;
+            for (int x =0; x < c; x++) {
+                for (int y =0; y < r; y++) {
+                    if ((r-y) > columnHeights[x]) {
+                        continue;
+                    } else if (((r-y) < columnHeights[x]) && (board.get(x, y) == 0)){
+                        numUnreachables++;
+                    }
+                }
+            }
 
             // Determine the total number of features:
             // - flattenedImage is a row vector with some number of elements
             // - plus 3 additional features (tallest point, bumpiness, rows cleared by this action)
-            int totalFeatures = 3;
+            int totalFeatures = 4;
 
             // Create a new Matrix to hold the full feature vector.
             Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
@@ -159,6 +170,7 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 0, (double) tallestPoint);
             fullFeatureVector.set(0, 1, (double) bumpiness);
             fullFeatureVector.set(0, 2, (double) clearedRows);
+            fullFeatureVector.set(0, 3, (double) numUnreachables);
 
             return fullFeatureVector;
 
@@ -317,10 +329,26 @@ public class TetrisQAgent
             // The work-around is just checking the score earned this turn
         int scoreThisTurn = game.getScoreThisTurn();
 
-        // prioritizing a flat board, and a board with cleared rows
-        score = (bumpiness * -3);
-        score -= (tallestPoint * 2);
-        score += (scoreThisTurn/6); // score earned from placing previous mino
+        // FEATURE 4: How many empty spaces are under each columns highest piece (we don't want a board with lots of unreachable holes)
+        int[] colEmptySpace = new int[c];
+        for (int x = 0; x < c; x++) {
+            for (int y = 0; y < r; y++) {
+                if ((r-y) > columnHeights[x]) {
+                    continue;
+                } else if (((r-y) < columnHeights[x]) && (!board.isCoordinateOccupied(x,y))){
+                    colEmptySpace[x] += 1;
+                }
+            }
+        }
+
+
+        // prioritizing a flat board, with no unreachable holes, and a board with cleared rows
+        score = (bumpiness * -2);
+        score -= (tallestPoint);
+        for (int i = 0; i < colEmptySpace.length; i++) {
+            score -= (colEmptySpace[i]*2);
+        }
+        score += (scoreThisTurn/2); // score earned from placing previous mino
 
         return score;
     }
