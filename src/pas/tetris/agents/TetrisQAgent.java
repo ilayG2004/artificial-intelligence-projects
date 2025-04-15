@@ -69,11 +69,9 @@ public class TetrisQAgent
         */
 
         qFunction.add(new Dense(inputLayer, hiddenDim));
-        qFunction.add(new Tanh());
+        qFunction.add(new ReLU());
         qFunction.add(new Dense(hiddenDim, hiddenDim));
-        qFunction.add(new Tanh());
-        qFunction.add(new Dense(hiddenDim, hiddenDim));
-        qFunction.add(new Tanh());
+        qFunction.add(new ReLU());
         qFunction.add(new Dense(hiddenDim, outDim));
 
         return qFunction;
@@ -253,7 +251,7 @@ public class TetrisQAgent
                         break;
                     }
                 }
-                if (rowCleared) { clearedRows++; }
+                if (rowCleared) { clearedRows += 3; }
             }
             
             // FEATURE 4: Any unreachable holes in columns? Did we build a tower that leaves empty spaces impossible to reach?
