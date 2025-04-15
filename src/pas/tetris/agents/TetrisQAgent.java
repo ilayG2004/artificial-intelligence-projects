@@ -38,7 +38,7 @@ public class TetrisQAgent
 {
 
     //public static final double EXPLORATION_PROB = 0.05;
-    private Hashtable<Matrix, Integer> exploredCounts;
+    private Hashtable<Matrix, Integer> exploredCounts = new Hashtable<>();
 
     private Random random;
 
@@ -100,8 +100,6 @@ public class TetrisQAgent
     {
         try
         {
-           
-            
             Matrix board = game.getGrayscaleImage(potentialAction);
             Shape boardSize = board.getShape();
             int c = boardSize.getNumCols();
@@ -115,7 +113,8 @@ public class TetrisQAgent
             for (int x = 0; x < c; x++) {
                 int cHeight = 0;
                 for (int y = 0; y < r; y++) {
-                    if ((board.get(x,y) == 0.5 || board.get(x,y) == 1)) {
+                    if ((board.get(y,x) == 0.5 || board.get(y,x) == 1)) {
+                        //System.out.println(x + "," + (r-y) + "= " + board.get(y,x));
                         //Max height of a column is the first nonzero value we come across when going from top to bottom
                         cHeight = r-y;
                         break;
@@ -137,8 +136,8 @@ public class TetrisQAgent
             for (int y = 0; y < r; y++) {
                 // Lazy check for cleared rows: there should be no cleared row unless our piece caused it. Otherwise they would have been deleted before this game state
                 boolean rowCleared = true;
-                for (int x = 0; x < c; c++) {
-                    if (board.get(x,y) == 0) {
+                for (int x = 0; x < c; x++) {
+                    if (board.get(y,x) == 0) {
                         rowCleared = false;
                         break;
                     }
@@ -152,15 +151,13 @@ public class TetrisQAgent
                 for (int y =0; y < r; y++) {
                     if ((r-y) > columnHeights[x]) {
                         continue;
-                    } else if (((r-y) < columnHeights[x]) && (board.get(x, y) == 0)){
+                    } else if (((r-y) < columnHeights[x]) && (board.get(y, x) == 0)){
                         numUnreachables++;
                     }
                 }
             }
 
             // Determine the total number of features:
-            // - flattenedImage is a row vector with some number of elements
-            // - plus 3 additional features (tallest point, bumpiness, rows cleared by this action)
             int totalFeatures = 4;
 
             // Create a new Matrix to hold the full feature vector.
@@ -179,6 +176,10 @@ public class TetrisQAgent
              * getStateMoveCount() works, making sure the vector
              * creation is identical to this method
              */
+            //System.out.println(tallestPoint);
+            //System.out.println(bumpiness);
+            //System.out.println(clearedRows);
+            //System.out.println(numUnreachables);
 
 
 
@@ -209,7 +210,8 @@ public class TetrisQAgent
      * @param move
      */
     public Integer getStateMoveCount(GameView game, Mino move) {
-        try {
+        try
+        { 
             Matrix board = game.getGrayscaleImage(move);
             Shape boardSize = board.getShape();
             int c = boardSize.getNumCols();
@@ -218,13 +220,12 @@ public class TetrisQAgent
             int tallestPoint = -1;
             // FEATURE 2: Topography of board. What is the bumpiness? Ideally we want our tertis board to stay flat for easy row clear
             int bumpiness = 0;
-            // FEATURE 4: All column heights -- vertical position of highest occupied point in a column
             int[] columnHeights = new int[c];
             //Search from top down. Starting at row zero and making your way down  
             for (int x = 0; x < c; x++) {
                 int cHeight = 0;
                 for (int y = 0; y < r; y++) {
-                    if ((board.get(x,y) == 0.5 || board.get(x,y) == 1)) {
+                    if ((board.get(y,x) == 0.5 || board.get(y,x) == 1)) {
                         //Max height of a column is the first nonzero value we come across when going from top to bottom
                         cHeight = r-y;
                         break;
@@ -243,24 +244,32 @@ public class TetrisQAgent
 
             // FEATURE 3: Does this piece clear any rows on the board? Ideally we want our action to result in full rows
             int clearedRows = 0;
-            for (int x = 0; x < c; x++) {
+            for (int y = 0; y < r; y++) {
                 // Lazy check for cleared rows: there should be no cleared row unless our piece caused it. Otherwise they would have been deleted before this game state
                 boolean rowCleared = true;
-                for (int y = 0; y < r; y++) {
-                    if (board.get(x,y) == 0) {
+                for (int x = 0; x < c; x++) {
+                    if (board.get(y,x) == 0) {
                         rowCleared = false;
                         break;
                     }
                 }
                 if (rowCleared) { clearedRows++; }
             }
-
             
+            // FEATURE 4: Any unreachable holes in columns? Did we build a tower that leaves empty spaces impossible to reach?
+            int numUnreachables = 0;
+            for (int x =0; x < c; x++) {
+                for (int y =0; y < r; y++) {
+                    if ((r-y) > columnHeights[x]) {
+                        continue;
+                    } else if (((r-y) < columnHeights[x]) && (board.get(y,x) == 0)){
+                        numUnreachables++;
+                    }
+                }
+            }
 
             // Determine the total number of features:
-            // - flattenedImage is a row vector with some number of elements
-            // - plus 3 additional features (tallest point, bumpiness, rows cleared by this action)
-            int totalFeatures = 3 + columnHeights.length;
+            int totalFeatures = 4;
 
             // Create a new Matrix to hold the full feature vector.
             Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
@@ -269,6 +278,7 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 0, (double) tallestPoint);
             fullFeatureVector.set(0, 1, (double) bumpiness);
             fullFeatureVector.set(0, 2, (double) clearedRows);
+            fullFeatureVector.set(0, 3, (double) numUnreachables);
 
 
             /*
@@ -475,9 +485,9 @@ public class TetrisQAgent
         score = (bumpiness * -2);
         score -= (tallestPoint);
         for (int i = 0; i < colEmptySpace.length; i++) {
-            score -= (colEmptySpace[i]*2);
+            score -= (colEmptySpace[i]*3);
         }
-        score += (scoreThisTurn/2); // score earned from placing previous mino
+        score += (scoreThisTurn*30); // score earned from placing previous mino
 
         return score;
     }
