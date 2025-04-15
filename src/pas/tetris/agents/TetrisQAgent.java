@@ -58,8 +58,8 @@ public class TetrisQAgent
         // this example will create a 3-layer neural network (1 hidden layer)
         // in this example, the input to the neural network is the
         // image of the board unrolled into a giant vector
-        final int inputLayer = 4;
-        final int hiddenDim = 16;
+        final int inputLayer = 5;
+        final int hiddenDim = 25;
         final int outDim = 1;
         /*Sequential: represents a neural network where layers are arranged sequentially (i.e. a line graph) */
         Sequential qFunction = new Sequential();
@@ -155,8 +155,58 @@ public class TetrisQAgent
                 }
             }
 
+            // FEATURE 5: Snuggness. How well does a piece fit with the existing piece around it?
+            // Is this piece horizontal or vertical?
+            int v_score = 0;
+            int h_score = 0;
+            for (int x = 0; x < c; x++) {
+                for (int y = 0; y < r; y++) {
+                    if (board.get(y,x) == 1) {
+                        if (x != c) {
+                            if (board.get(y,x+1) == 1) {
+                                h_score++;
+                            }
+                        }
+                        if (y != r) {
+                            if (board.get(y+1, x) == 1) {
+                                v_score++;
+                            }
+                        }
+                    }  
+                }
+            }
+            // Based on orientation, how snug does it fit?
+            int snugness = 0;
+            for (int x = 0; x < c; x++) {
+                for (int y = 0; y < r; y++) {
+                    if (board.get(y,x) == 1) {
+                        // VERTICAL PIECE: check sides
+                        if (v_score > h_score) {
+                            if (x != c) { 
+                                if (board.get(y,x+1) == 0.5) {
+                                    snugness++;
+                                }
+                            }
+                            if (x != 0) {
+                                if (board.get(y,x-1) == 0.5) {
+                                    snugness++;
+                                }
+                            }
+                        // HORIZONTAL PIECE: check bottom
+                        } else {
+                            if (y != r) {
+                                if (board.get(y+1,x) == 0.5) {
+                                    snugness++;
+                                }
+                            }
+                        }
+                    }  
+                }
+            }
+
+
             // Determine the total number of features:
-            int totalFeatures = 4;
+            int totalFeatures = 5;
 
             // Create a new Matrix to hold the full feature vector.
             Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
@@ -166,6 +216,8 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 1, (double) bumpiness);
             fullFeatureVector.set(0, 2, (double) clearedRows);
             fullFeatureVector.set(0, 3, (double) numUnreachables);
+            fullFeatureVector.set(0, 4, (double) snugness);
+
 
 
 
@@ -265,9 +317,58 @@ public class TetrisQAgent
                     }
                 }
             }
+            // FEATURE 5: Snuggness. How well does a piece fit with the existing piece around it?
+            // Is this piece horizontal or vertical?
+            int v_score = 0;
+            int h_score = 0;
+            for (int x = 0; x < c; x++) {
+                for (int y = 0; y < r; y++) {
+                    if (board.get(y,x) == 1) {
+                        if (x != c) {
+                            if (board.get(y,x+1) == 1) {
+                                h_score++;
+                            }
+                        }
+                        if (y != r) {
+                            if (board.get(y+1, x) == 1) {
+                                v_score++;
+                            }
+                        }
+                    }  
+                }
+            }
+            // Based on orientation, how snug does it fit?
+            int snugness = 0;
+            for (int x = 0; x < c; x++) {
+                for (int y = 0; y < r; y++) {
+                    if (board.get(y,x) == 1) {
+                        // VERTICAL PIECE: check sides
+                        if (v_score > h_score) {
+                            if (x != c) { 
+                                if (board.get(y,x+1) == 0.5) {
+                                    snugness++;
+                                }
+                            }
+                            if (x != 0) {
+                                if (board.get(y,x-1) == 0.5) {
+                                    snugness++;
+                                }
+                            }
+                        // HORIZONTAL PIECE: check bottom
+                        } else {
+                            if (y != r) {
+                                if (board.get(y+1,x) == 0.5) {
+                                    snugness++;
+                                }
+                            }
+                        }
+                    }  
+                }
+            }
+
 
             // Determine the total number of features:
-            int totalFeatures = 4;
+            int totalFeatures = 5;
 
             // Create a new Matrix to hold the full feature vector.
             Matrix fullFeatureVector = Matrix.zeros(1, totalFeatures);
@@ -277,6 +378,8 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 1, (double) bumpiness);
             fullFeatureVector.set(0, 2, (double) clearedRows);
             fullFeatureVector.set(0, 3, (double) numUnreachables);
+            fullFeatureVector.set(0, 4, (double) snugness);
+
 
 
             /*

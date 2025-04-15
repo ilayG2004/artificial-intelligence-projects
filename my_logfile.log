@@ -1,4 +1,12 @@
-[INFO] TrainerAgent.initialize: creating replay buffer of size [1280]
-[INFO] TrainerAgent.onGameEnd: After 1 cycle(s), avg trajectory utility = -1.6202680380054005E-7
-[INFO] TrainerAgent.onGameEnd: After 2 cycle(s), avg trajectory utility = -1.3802160376051407E-7
-[INFO] TrainerAgent.onGameEnd: After 3 cycle(s), avg trajectory utility = -1.3802660366049206E-7
+[INFO] TrainerAgent.initialize: creating replay buffer of size [1000000]
+[INFO] TrainerAgent.onGameEnd: After 1 cycle(s), avg trajectory utility = -996.2805599133613
+[INFO] TrainerAgent.onGameEnd: After 2 cycle(s), avg trajectory utility = -970.5293112536008
+[INFO] TrainerAgent.onGameEnd: After 3 cycle(s), avg trajectory utility = -963.3145159197542
+[INFO] TrainerAgent.onGameEnd: After 4 cycle(s), avg trajectory utility = -918.5684743883072
+[INFO] TrainerAgent.onGameEnd: After 5 cycle(s), avg trajectory utility = -1015.1854238273105
+[INFO] TrainerAgent.onGameEnd: After 6 cycle(s), avg trajectory utility = -995.6317382318814
+[INFO] TrainerAgent.onGameEnd: After 7 cycle(s), avg trajectory utility = -1035.663913603107
+[INFO] TrainerAgent.onGameEnd: After 8 cycle(s), avg trajectory utility = -1019.4917239064841
+[INFO] TrainerAgent.onGameEnd: After 9 cycle(s), avg trajectory utility = -937.7615768056663
+[INFO] TrainerAgent.onGameEnd: After 10 cycle(s), avg trajectory utility = -1038.776634185683
+[INFO] TrainerAgent.onGameEnd: After 11 cycle(s), avg trajectory utility = -985.4466141314036
