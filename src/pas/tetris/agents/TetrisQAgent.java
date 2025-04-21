@@ -41,6 +41,15 @@ public class TetrisQAgent
     private Hashtable<Matrix, Integer> exploredCounts = new Hashtable<>();
 
     private Random random;
+    private Board prevBoard;
+
+    // PrevBoard setters and getters
+    public void setPrevBoard(Board b) {
+        prevBoard = b;
+    }
+    public Board getPrevBoard() {
+        return this.prevBoard;
+    }
 
     public TetrisQAgent(String name)
     {
@@ -154,56 +163,19 @@ public class TetrisQAgent
                     }
                 }
             }
-
             // FEATURE 5: Snuggness. How well does a piece fit with the existing piece around it?
-            // Is this piece horizontal or vertical?
-            int v_score = 0;
-            int h_score = 0;
-            for (int x = 0; x < c; x++) {
-                for (int y = 0; y < r; y++) {
-                    if (board.get(y,x) == 1) {
-                        if (x != c) {
-                            if (board.get(y,x+1) == 1) {
-                                h_score++;
-                            }
-                        }
-                        if (y != r) {
-                            if (board.get(y+1, x) == 1) {
-                                v_score++;
-                            }
-                        }
-                    }  
-                }
-            }
-            // Based on orientation, how snug does it fit?
             int snugness = 0;
-            for (int x = 0; x < c; x++) {
-                for (int y = 0; y < r; y++) {
-                    if (board.get(y,x) == 1) {
-                        // VERTICAL PIECE: check sides
-                        if (v_score > h_score) {
-                            if (x != c) { 
-                                if (board.get(y,x+1) == 0.5) {
-                                    snugness++;
-                                }
-                            }
-                            if (x != 0) {
-                                if (board.get(y,x-1) == 0.5) {
-                                    snugness++;
-                                }
-                            }
-                        // HORIZONTAL PIECE: check bottom
-                        } else {
-                            if (y != r) {
-                                if (board.get(y+1,x) == 0.5) {
-                                    snugness++;
-                                }
-                            }
-                        }
-                    }  
+            for (int y = 0; y < r; y++) {
+                for (int x = 0; x < c; x++) {
+                    if (board.get(y, x) == 1.0) {
+                        // Check all 4 neighbors for contact with existing blocks
+                        if (x > 0 && board.get(y, x - 1) == 0.5) snugness++;
+                        if (x < c - 1 && board.get(y, x + 1) == 0.5) snugness++;
+                        if (y > 0 && board.get(y - 1, x) == 0.5) snugness++;
+                        if (y < r - 1 && board.get(y + 1, x) == 0.5) snugness++;
+                    }
                 }
             }
-
 
             // Determine the total number of features:
             int totalFeatures = 5;
@@ -276,6 +248,7 @@ public class TetrisQAgent
                 int cHeight = 0;
                 for (int y = 0; y < r; y++) {
                     if ((board.get(y,x) == 0.5 || board.get(y,x) == 1)) {
+                        //System.out.println(x + "," + (r-y) + "= " + board.get(y,x));
                         //Max height of a column is the first nonzero value we come across when going from top to bottom
                         cHeight = r-y;
                         break;
@@ -303,7 +276,7 @@ public class TetrisQAgent
                         break;
                     }
                 }
-                if (rowCleared) { clearedRows += 3; }
+                if (rowCleared) { clearedRows++; }
             }
             
             // FEATURE 4: Any unreachable holes in columns? Did we build a tower that leaves empty spaces impossible to reach?
@@ -312,60 +285,23 @@ public class TetrisQAgent
                 for (int y =0; y < r; y++) {
                     if ((r-y) > columnHeights[x]) {
                         continue;
-                    } else if (((r-y) < columnHeights[x]) && (board.get(y,x) == 0)){
+                    } else if (((r-y) < columnHeights[x]) && (board.get(y, x) == 0)){
                         numUnreachables++;
                     }
                 }
             }
-            // FEATURE 5: Snuggness. How well does a piece fit with the existing piece around it?
-            // Is this piece horizontal or vertical?
-            int v_score = 0;
-            int h_score = 0;
-            for (int x = 0; x < c; x++) {
-                for (int y = 0; y < r; y++) {
-                    if (board.get(y,x) == 1) {
-                        if (x != c) {
-                            if (board.get(y,x+1) == 1) {
-                                h_score++;
-                            }
-                        }
-                        if (y != r) {
-                            if (board.get(y+1, x) == 1) {
-                                v_score++;
-                            }
-                        }
-                    }  
-                }
-            }
-            // Based on orientation, how snug does it fit?
             int snugness = 0;
-            for (int x = 0; x < c; x++) {
-                for (int y = 0; y < r; y++) {
-                    if (board.get(y,x) == 1) {
-                        // VERTICAL PIECE: check sides
-                        if (v_score > h_score) {
-                            if (x != c) { 
-                                if (board.get(y,x+1) == 0.5) {
-                                    snugness++;
-                                }
-                            }
-                            if (x != 0) {
-                                if (board.get(y,x-1) == 0.5) {
-                                    snugness++;
-                                }
-                            }
-                        // HORIZONTAL PIECE: check bottom
-                        } else {
-                            if (y != r) {
-                                if (board.get(y+1,x) == 0.5) {
-                                    snugness++;
-                                }
-                            }
-                        }
-                    }  
+            for (int y = 0; y < r; y++) {
+                for (int x = 0; x < c; x++) {
+                    if (board.get(y, x) == 1.0) {
+                        // Check all 4 neighbors for contact with existing blocks
+                        if (x > 0 && board.get(y, x - 1) == 0.5) snugness++;
+                        if (x < c - 1 && board.get(y, x + 1) == 0.5) snugness++;
+                        if (y > 0 && board.get(y - 1, x) == 0.5) snugness++;
+                        if (y < r - 1 && board.get(y + 1, x) == 0.5) snugness++;
+                    }
                 }
             }
-
 
             // Determine the total number of features:
             int totalFeatures = 5;
@@ -379,7 +315,6 @@ public class TetrisQAgent
             fullFeatureVector.set(0, 2, (double) clearedRows);
             fullFeatureVector.set(0, 3, (double) numUnreachables);
             fullFeatureVector.set(0, 4, (double) snugness);
-
 
 
             /*
@@ -464,6 +399,7 @@ public class TetrisQAgent
             }
         }
 
+        
         return returnedMove;
     }
 
@@ -581,15 +517,65 @@ public class TetrisQAgent
             }
         }
 
+        // FEATURE 5: How well did our next piece 'fit' into this board. Compare current board to the previous board. Much simpler than keeping track of individual Mino coordinates
+        // Ranges from value [-4,4] - there are 4 blocks (coordinates) per mino. Ideally, all 4 blocks to a mino fit nicely with their neighbors
+        int snugness = 0;
+        int[][] newMinoCoords = new int[4][2];
+        if (scoreThisTurn > 0) {
+            snugness = 4;
+        } else if (prevBoard == null) {
+            // First turn. There is no previous board to compare snugness to. Prioritize putting pieces in corners.
+            for (int x = 0; x < c-1; x++) {
+                for (int y =0; y < r; y++) {
+                    if (board.isCoordinateOccupied(9, y)) {
+                        snugness++;
+                    }
+                    if (board.isCoordinateOccupied(x, 21)) {
+                        snugness++;
+                    }
+                }
+            }
+        } else {
+            Board prevBoard = this.getPrevBoard();
+            // Find the piece that wasn't there last time. Inferred by seeing what spaces were filled out in the new board
+            int piece_iterator = 0;
+            for (int x = 0; x < c-1; x++) {
+                for (int y = 0; y < r-1; y++) {
+                    if (prevBoard.isCoordinateOccupied(x,y) && board.isCoordinateOccupied(x,y)) {
+                        continue;
+                    } else if (!prevBoard.isCoordinateOccupied(x,y) && board.isCoordinateOccupied(x,y)){
+                        newMinoCoords[piece_iterator][0] = x;
+                        newMinoCoords[piece_iterator][1] = y;
+                        piece_iterator++;
+                    }
+                }
+            }
 
+            for (int piece = 0; piece < 4; piece++) {
+                int nx = newMinoCoords[piece][0];
+                int ny = newMinoCoords[piece][1];
+                int verticalHeight = (r-ny);
+                if (nx > 0 && board.isCoordinateOccupied(nx - 1, ny)) snugness+= verticalHeight;
+                if (nx < c - 1 && board.isCoordinateOccupied(nx + 1, ny)) snugness+= verticalHeight;
+                if (ny > 0 && board.isCoordinateOccupied(nx, ny - 1)) snugness+= verticalHeight;
+                if (ny < r - 1 && board.isCoordinateOccupied(nx, ny + 1)) snugness+= verticalHeight;
+            }
+        }
+        //System.out.println(snugness);
         // prioritizing a flat board, with no unreachable holes, and a board with cleared rows
-        score = (bumpiness * -2);
-        score -= (tallestPoint);
+        score = (bumpiness * -4);
+
+        //Exponential tallestPoint penalty tries to prevent stacking
+        score -= Math.pow(tallestPoint*2, 2.5);
+
         for (int i = 0; i < colEmptySpace.length; i++) {
             score -= (colEmptySpace[i]*3);
         }
-        score += (scoreThisTurn*30); // score earned from placing previous mino
+        score += (scoreThisTurn*40); // score earned from placing previous mino
+        score += (Math.min(snugness, 4) * 0.5);
 
+        this.setPrevBoard(board);
+        System.out.println(score);
         return score;
     }
 
