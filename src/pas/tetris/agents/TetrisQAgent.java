@@ -571,11 +571,13 @@ public class TetrisQAgent
         for (int i = 0; i < colEmptySpace.length; i++) {
             score -= (colEmptySpace[i]*3);
         }
-        score += (scoreThisTurn*40); // score earned from placing previous mino
+        score += (scoreThisTurn*100); // score earned from placing previous mino
         score += (Math.min(snugness, 4) * 0.5);
 
+        //if (columnHeights[0] < tallestPoint - 5) score -= 30;
+        //if (columnHeights[c-1] < tallestPoint - 5) score -= 30;
+
         this.setPrevBoard(board);
-        System.out.println(score);
         return score;
     }
 
