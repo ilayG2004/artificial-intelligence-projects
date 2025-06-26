@@ -80,7 +80,7 @@ Accuracy quotas were used for each map based on difficulty for the A* agent. Aft
 
 **Stochastic Adversarial Search Pokemon**
 
-Objective: Create a tree search algorithm and heuristic that can inform Pokémon trainer to make optimal battle decisions and defeat enemy trainers.
+**Objective:** Create a tree search algorithm and heuristic that can inform Pokémon trainer to make optimal battle decisions and defeat enemy trainers.
 
 **Building the Tree:** 
 Node objects were created of several types. Min nodes (representing our enemy's turn to minimize our utility), Max nodes (representing our turn to maximize our utility), and chance nodes (representing the stochastic outcome following either player's move). Min or Max nodes consider all legal moves available at the state of the turn. Since there are a combinatorial number of ways for a move to resolve, we intuitively created a function which selects the most probable outcome from all outcomes of a move. Thus, after each Min or Max node, there was only one chance node, representing the summary of outcomes. This reduced the size of our decision tree dramatically, and allowed for our agent to make predictions further in advance. For multi-hit moves, which have the potential to hit 2-5 times in a turn, and for each of those attack have a chance to critical hit or miss, the number of chance nodes generated could cause the game to crash due to heap-space usage. We decided to average out the number of times a multihit move attacks to just 3, and then calculate the damage applied from that move hitting three times as the singular chance node generated for that move. This also worked to our advantage since other students had to ignore predicting multi-hit possibilities in fear of crashing their agent. For the sake of this assignment, since our agent was given good pokemon, we assume we always start first. The tree follows a pattern branching out of: Max --> Chance... --> Min... --> Chance... --> Max..., branching out wider with each turn evaluated.
@@ -102,7 +102,8 @@ Our agent successfully, and swiftly defeated the easy, medium, and hard difficul
 ----
 
 **Tetris Reinforcement Learning**
-Objective: Train an agent to play tetris and score an average of 20 points across 500 games.
+
+**Objective:** Train an agent to play tetris and score an average of 20 points across 500 games.
 
 **What features would make our agent perform better**
 -Topography: Generally speaking, an incredibly bumpy tetris board is not optimal. Although human players with better planning skills might set the board this way on purpose.
