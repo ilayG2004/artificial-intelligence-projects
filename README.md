@@ -1,7 +1,12 @@
 **Three Projects:**
+
 **1. Maze Search Agent Astar** src < pas < stealth < agents < StealthAgent.java
+
 **2. Stochastic Adversarial Search Pokemon** src < pas < pokemon < agents < Node.java & TreeTraversalAgent.java
+
 **3. Reinforcement Learning Tetris** src < pas < tetris < agents < TetrisQAgent.java
+
+----
 
 **Global Search Agent: Astar Algorithm**
 
@@ -71,6 +76,7 @@ Accuracy quotas were used for each map based on difficulty for the A* agent. Aft
 -   Random enemy movement can lead to pinsir movements, sometimes leading to losing terminal states no matter which moves our A* agent makes
 -   Our unit is "pulled" toward the goal because of cost discounts. This means while they might side-step around enemies, they will not retreat, leading to states where our agent throws themselves into danger in favor of approaching the goal. While this made our agent far simpler and less operationally intensive, it definitely affected its accuracy.
 
+----
 
 **Stochastic Adversarial Search Pokemon**
 
@@ -93,7 +99,7 @@ Our heuristic is used to assign utility value to non-terminal nodes. Without get
 **Conclusions**
 Our agent successfully, and swiftly defeated the easy, medium, and hard difficulty trainers, selecting super effective moves, and switching to use different Pokemon when vulnerable. Possible improvements include some kind of function calculating which player would go first before building the tree, but as stated earlier, the Pokemon our agent was given, as well as those of the opponent made it reasonable to assume our agent would always go first (we were given faster Pokemon).
 
-
+----
 
 **Tetris Reinforcement Learning**
 Objective: Train an agent to play tetris and score an average of 20 points across 500 games.
